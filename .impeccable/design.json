@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-10T00:22:24+05:30",
+  "title": "Design System: AgentWisper",
+  "extensions": {
+    "colorMeta": {
+      "mineral-worktop": {
+        "role": "neutral",
+        "displayName": "Mineral Worktop",
+        "canonical": "#F3F5F7",
+        "tonalRamp": ["oklch(15% 0.008 250)", "oklch(26% 0.008 250)", "oklch(38% 0.008 250)", "oklch(50% 0.008 250)", "oklch(62% 0.008 250)", "oklch(74% 0.008 250)", "oklch(86% 0.008 250)", "oklch(95% 0.008 250)"]
+      },
+      "paper-white": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "#FFFFFF",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(26% 0 0)", "oklch(38% 0 0)", "oklch(50% 0 0)", "oklch(62% 0 0)", "oklch(74% 0 0)", "oklch(86% 0 0)", "oklch(95% 0 0)"]
+      },
+      "frosted-panel": {
+        "role": "neutral",
+        "displayName": "Frosted Panel",
+        "canonical": "#EDF1F5",
+        "tonalRamp": ["oklch(15% 0.012 250)", "oklch(26% 0.012 250)", "oklch(38% 0.012 250)", "oklch(50% 0.012 250)", "oklch(62% 0.012 250)", "oklch(74% 0.012 250)", "oklch(86% 0.012 250)", "oklch(95% 0.012 250)"]
+      },
+      "navigation-paper": {
+        "role": "neutral",
+        "displayName": "Navigation Paper",
+        "canonical": "#F8FAFB",
+        "tonalRamp": ["oklch(15% 0.006 250)", "oklch(26% 0.006 250)", "oklch(38% 0.006 250)", "oklch(50% 0.006 250)", "oklch(62% 0.006 250)", "oklch(74% 0.006 250)", "oklch(86% 0.006 250)", "oklch(95% 0.006 250)"]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Cool Rule",
+        "canonical": "#D8E0E7",
+        "tonalRamp": ["oklch(15% 0.016 250)", "oklch(26% 0.016 250)", "oklch(38% 0.016 250)", "oklch(50% 0.016 250)", "oklch(62% 0.016 250)", "oklch(74% 0.016 250)", "oklch(86% 0.016 250)", "oklch(95% 0.016 250)"]
+      },
+      "strong-rule": {
+        "role": "neutral",
+        "displayName": "Strong Cool Rule",
+        "canonical": "#BBC7D3",
+        "tonalRamp": ["oklch(15% 0.028 250)", "oklch(26% 0.028 250)", "oklch(38% 0.028 250)", "oklch(50% 0.028 250)", "oklch(62% 0.028 250)", "oklch(74% 0.028 250)", "oklch(86% 0.028 250)", "oklch(95% 0.028 250)"]
+      },
+      "deep-navy-ink": {
+        "role": "neutral",
+        "displayName": "Deep Navy Ink",
+        "canonical": "#111C2E",
+        "tonalRamp": ["oklch(15% 0.045 260)", "oklch(26% 0.045 260)", "oklch(38% 0.045 260)", "oklch(50% 0.045 260)", "oklch(62% 0.045 260)", "oklch(74% 0.045 260)", "oklch(86% 0.045 260)", "oklch(95% 0.045 260)"]
+      },
+      "slate-copy": {
+        "role": "neutral",
+        "displayName": "Slate Copy",
+        "canonical": "#263548",
+        "tonalRamp": ["oklch(15% 0.04 255)", "oklch(26% 0.04 255)", "oklch(38% 0.04 255)", "oklch(50% 0.04 255)", "oklch(62% 0.04 255)", "oklch(74% 0.04 255)", "oklch(86% 0.04 255)", "oklch(95% 0.04 255)"]
+      },
+      "muted-slate": {
+        "role": "neutral",
+        "displayName": "Muted Slate",
+        "canonical": "#647386",
+        "tonalRamp": ["oklch(15% 0.035 250)", "oklch(26% 0.035 250)", "oklch(38% 0.035 250)", "oklch(50% 0.035 250)", "oklch(62% 0.035 250)", "oklch(74% 0.035 250)", "oklch(86% 0.035 250)", "oklch(95% 0.035 250)"]
+      },
+      "cobalt-route": {
+        "role": "primary",
+        "displayName": "Cobalt Route",
+        "canonical": "#2F67E8",
+        "tonalRamp": ["oklch(15% 0.19 260)", "oklch(26% 0.19 260)", "oklch(38% 0.19 260)", "oklch(50% 0.19 260)", "oklch(62% 0.19 260)", "oklch(74% 0.19 260)", "oklch(86% 0.19 260)", "oklch(95% 0.19 260)"]
+      },
+      "cobalt-hover": {
+        "role": "primary",
+        "displayName": "Cobalt Hover",
+        "canonical": "#2454C5",
+        "tonalRamp": ["oklch(15% 0.18 260)", "oklch(26% 0.18 260)", "oklch(38% 0.18 260)", "oklch(50% 0.18 260)", "oklch(62% 0.18 260)", "oklch(74% 0.18 260)", "oklch(86% 0.18 260)", "oklch(95% 0.18 260)"]
+      },
+      "cobalt-mist": {
+        "role": "primary",
+        "displayName": "Cobalt Mist",
+        "canonical": "#E8EFFF",
+        "tonalRamp": ["oklch(15% 0.04 260)", "oklch(26% 0.04 260)", "oklch(38% 0.04 260)", "oklch(50% 0.04 260)", "oklch(62% 0.04 260)", "oklch(74% 0.04 260)", "oklch(86% 0.04 260)", "oklch(95% 0.04 260)"]
+      },
+      "jade-signal": {
+        "role": "secondary",
+        "displayName": "Jade Signal",
+        "canonical": "#087456",
+        "tonalRamp": ["oklch(15% 0.12 160)", "oklch(26% 0.12 160)", "oklch(38% 0.12 160)", "oklch(50% 0.12 160)", "oklch(62% 0.12 160)", "oklch(74% 0.12 160)", "oklch(86% 0.12 160)", "oklch(95% 0.12 160)"]
+      },
+      "jade-mist": {
+        "role": "secondary",
+        "displayName": "Jade Mist",
+        "canonical": "#E5F5EF",
+        "tonalRamp": ["oklch(15% 0.035 160)", "oklch(26% 0.035 160)", "oklch(38% 0.035 160)", "oklch(50% 0.035 160)", "oklch(62% 0.035 160)", "oklch(74% 0.035 160)", "oklch(86% 0.035 160)", "oklch(95% 0.035 160)"]
+      },
+      "crimson-error": {
+        "role": "tertiary",
+        "displayName": "Crimson Error",
+        "canonical": "#B63A50",
+        "tonalRamp": ["oklch(15% 0.14 15)", "oklch(26% 0.14 15)", "oklch(38% 0.14 15)", "oklch(50% 0.14 15)", "oklch(62% 0.14 15)", "oklch(74% 0.14 15)", "oklch(86% 0.14 15)", "oklch(95% 0.14 15)"]
+      },
+      "crimson-mist": {
+        "role": "tertiary",
+        "displayName": "Crimson Mist",
+        "canonical": "#FCEBED",
+        "tonalRamp": ["oklch(15% 0.03 15)", "oklch(26% 0.03 15)", "oklch(38% 0.03 15)", "oklch(50% 0.03 15)", "oklch(62% 0.03 15)", "oklch(74% 0.03 15)", "oklch(86% 0.03 15)", "oklch(95% 0.03 15)"]
+      },
+      "amber-warning": {
+        "role": "tertiary",
+        "displayName": "Amber Warning",
+        "canonical": "#A36616",
+        "tonalRamp": ["oklch(15% 0.11 75)", "oklch(26% 0.11 75)", "oklch(38% 0.11 75)", "oklch(50% 0.11 75)", "oklch(62% 0.11 75)", "oklch(74% 0.11 75)", "oklch(86% 0.11 75)", "oklch(95% 0.11 75)"]
+      },
+      "carbon-control": {
+        "role": "neutral",
+        "displayName": "Carbon Control",
+        "canonical": "#111820",
+        "tonalRamp": ["oklch(15% 0.028 245)", "oklch(26% 0.028 245)", "oklch(38% 0.028 245)", "oklch(50% 0.028 245)", "oklch(62% 0.028 245)", "oklch(74% 0.028 245)", "oklch(86% 0.028 245)", "oklch(95% 0.028 245)"]
+      },
+      "carbon-control-hover": {
+        "role": "neutral",
+        "displayName": "Carbon Control Hover",
+        "canonical": "#18222D",
+        "tonalRamp": ["oklch(15% 0.03 245)", "oklch(26% 0.03 245)", "oklch(38% 0.03 245)", "oklch(50% 0.03 245)", "oklch(62% 0.03 245)", "oklch(74% 0.03 245)", "oklch(86% 0.03 245)", "oklch(95% 0.03 245)"]
+      },
+      "carbon-edge": {
+        "role": "neutral",
+        "displayName": "Carbon Edge",
+        "canonical": "#344252",
+        "tonalRamp": ["oklch(15% 0.035 245)", "oklch(26% 0.035 245)", "oklch(38% 0.035 245)", "oklch(50% 0.035 245)", "oklch(62% 0.035 245)", "oklch(74% 0.035 245)", "oklch(86% 0.035 245)", "oklch(95% 0.035 245)"]
+      },
+      "carbon-copy": {
+        "role": "neutral",
+        "displayName": "Carbon Copy",
+        "canonical": "#F7FAFC",
+        "tonalRamp": ["oklch(15% 0.006 245)", "oklch(26% 0.006 245)", "oklch(38% 0.006 245)", "oklch(50% 0.006 245)", "oklch(62% 0.006 245)", "oklch(74% 0.006 245)", "oklch(86% 0.006 245)", "oklch(95% 0.006 245)"]
+      },
+      "carbon-muted": {
+        "role": "neutral",
+        "displayName": "Carbon Muted",
+        "canonical": "#AAB7C5",
+        "tonalRamp": ["oklch(15% 0.025 245)", "oklch(26% 0.025 245)", "oklch(38% 0.025 245)", "oklch(50% 0.025 245)", "oklch(62% 0.025 245)", "oklch(74% 0.025 245)", "oklch(86% 0.025 245)", "oklch(95% 0.025 245)"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Page Display", "purpose": "One page title per main view." },
+      "title": { "displayName": "Surface Title", "purpose": "Section and surface headings." },
+      "body": { "displayName": "Interface Body", "purpose": "Instructions, transcripts, history, and fields." },
+      "label": { "displayName": "Control Label", "purpose": "Actions, route state, and field labels." },
+      "mono": { "displayName": "Machine Metadata", "purpose": "Provider, model, count, and compact technical labels." }
+    },
+    "shadows": [
+      { "name": "signal-node-underlay", "value": "0 3px 0 #080D12", "purpose": "Code-drawn dark underlay lifts only the floating Signal Node from the desktop." }
+    ],
+    "motion": [
+      { "name": "active-signal-cadence", "value": "55ms", "purpose": "Listening waveform and processing indicator redraw cadence." },
+      { "name": "idle-refresh-cadence", "value": "250ms", "purpose": "Low-cost refresh cadence while Signal Node is at rest." },
+      { "name": "success-hold", "value": "1800ms", "purpose": "Completed transcription remains readable before Ready returns." },
+      { "name": "error-hold", "value": "2800ms", "purpose": "Failure message receives longer reading time before Ready returns." }
+    ],
+    "breakpoints": [
+      { "name": "workspace-min-width", "value": "940px" },
+      { "name": "workspace-min-height", "value": "660px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main dictation and save action; use once per immediate action area.",
+      "html": "<button class=\"ds-button-primary\">Start dictation</button>",
+      "css": ".ds-button-primary { background:#2F67E8; color:#FFFFFF; border:0; border-radius:0; padding:10px 18px; font:700 13px 'Segoe UI',sans-serif; cursor:pointer; } .ds-button-primary:hover { background:#2454C5; } .ds-button-primary:active { background:#1F49AE; } .ds-button-primary:focus-visible { outline:2px solid #2F67E8; outline-offset:2px; } .ds-button-primary:disabled { background:#EDF1F5; color:#647386; cursor:default; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Neutral action with lower emphasis than the current primary command.",
+      "html": "<button class=\"ds-button-secondary\">Copy</button>",
+      "css": ".ds-button-secondary { background:#EDF1F5; color:#111C2E; border:0; border-radius:0; padding:10px 18px; font:700 13px 'Segoe UI',sans-serif; cursor:pointer; } .ds-button-secondary:hover { background:#E2E8EE; } .ds-button-secondary:active { background:#D8E0E7; } .ds-button-secondary:focus-visible { outline:2px solid #2F67E8; outline-offset:2px; }"
+    },
+    {
+      "name": "Surface Card",
+      "kind": "card",
+      "refersTo": "surface-card",
+      "description": "Flat paper surface for transcripts, settings sections, and history.",
+      "html": "<section class=\"ds-surface-card\"><h3>Latest transcript</h3><p>Add exponential backoff with jitter to the HTTP client.</p></section>",
+      "css": ".ds-surface-card { background:#FFFFFF; color:#263548; border:1px solid #D8E0E7; border-radius:0; padding:20px; font:400 13px/1.45 'Segoe UI',sans-serif; } .ds-surface-card h3 { margin:0 0 10px; color:#111C2E; font-size:15px; line-height:1.3; } .ds-surface-card p { margin:0; } .ds-surface-card:focus-within { border-color:#2F67E8; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Square native field for keys, URLs, model IDs, and language codes.",
+      "html": "<label class=\"ds-field\"><span>Model ID</span><input value=\"whisper-large-v3-turbo\"></label>",
+      "css": ".ds-field { display:grid; gap:6px; color:#263548; font:700 12px 'Segoe UI',sans-serif; } .ds-field input { background:#FFFFFF; color:#111C2E; border:1px solid #BBC7D3; border-radius:0; padding:8px; font:400 13px 'Segoe UI',sans-serif; } .ds-field input:hover { border-color:#647386; } .ds-field input:focus-visible { outline:2px solid #2F67E8; outline-offset:0; border-color:#2F67E8; } .ds-field input:disabled { background:#EDF1F5; color:#647386; }"
+    },
+    {
+      "name": "Active Navigation Item",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "Selected destination in the fixed left navigation rail.",
+      "html": "<nav class=\"ds-nav\"><button>History</button><button class=\"ds-nav-active\">Speak</button><button>Settings</button></nav>",
+      "css": ".ds-nav { width:184px; display:grid; gap:4px; padding:12px; background:#F8FAFB; border-right:1px solid #D8E0E7; } .ds-nav button { background:#F8FAFB; color:#647386; border:0; border-radius:0; padding:11px 10px; text-align:left; font:700 13px 'Segoe UI',sans-serif; cursor:pointer; } .ds-nav button:hover,.ds-nav .ds-nav-active { background:#E8EFFF; color:#2F67E8; } .ds-nav button:focus-visible { outline:2px solid #2F67E8; outline-offset:-2px; }"
+    },
+    {
+      "name": "Signal Stage",
+      "kind": "custom",
+      "refersTo": "signal-stage",
+      "description": "Main microphone-to-model-to-cursor route and its current state.",
+      "html": "<div class=\"ds-signal-stage\"><div class=\"ds-stage-status\"><span>Ready</span><span>Local Parakeet</span></div><div class=\"ds-route\"><b>Microphone</b><i></i><b>AI</b><i></i><b>Active cursor</b></div></div>",
+      "css": ".ds-signal-stage { background:#FFFFFF; color:#111C2E; border:2px solid #D8E0E7; border-radius:0; padding:18px 20px 22px; font:700 12px 'Segoe UI',sans-serif; } .ds-stage-status { display:flex; justify-content:space-between; margin-bottom:28px; } .ds-stage-status span:first-child { color:#087456; } .ds-stage-status span:last-child { color:#647386; font-weight:400; } .ds-route { display:grid; grid-template-columns:auto 1fr auto 1fr auto; align-items:center; gap:12px; text-align:center; } .ds-route b { display:grid; place-items:center; min-width:76px; min-height:48px; background:#EDF1F5; border:2px solid #BBC7D3; border-radius:999px; } .ds-route i { height:2px; background:#2F67E8; position:relative; } .ds-route i::after { content:''; position:absolute; right:0; top:-3px; width:8px; height:8px; border-radius:999px; background:#2F67E8; } .ds-signal-stage:hover { border-color:#BBC7D3; } .ds-signal-stage:focus-visible { outline:2px solid #2F67E8; outline-offset:2px; }"
+    },
+    {
+      "name": "Signal Node Ready",
+      "kind": "custom",
+      "refersTo": "signal-node",
+      "description": "Persistent bottom-right control shown whenever AgentWisper is running.",
+      "html": "<button class=\"ds-signal-node\" aria-label=\"AgentWisper ready, Right Ctrl\"><span class=\"ds-port\"></span><svg viewBox=\"0 0 84 32\" aria-hidden=\"true\"><path d=\"M0 16 C24 16 28 5 58 5 H84\"/><path class=\"ds-jade\" d=\"M0 16 H84\"/><path d=\"M0 16 C24 16 28 27 58 27 H84\"/></svg><span><strong>Ready</strong><small>Right Ctrl</small></span></button>",
+      "css": ".ds-signal-node { width:248px; height:58px; display:grid; grid-template-columns:34px 84px 1fr; align-items:center; gap:12px; background:#111820; color:#F7FAFC; border:1px solid #344252; border-radius:18px; padding:0 16px 0 14px; font-family:'Segoe UI',sans-serif; cursor:pointer; box-shadow:0 3px 0 #080D12; } .ds-signal-node:hover { background:#18222D; } .ds-signal-node:active { transform:translateY(1px); box-shadow:0 2px 0 #080D12; } .ds-signal-node:focus-visible { outline:2px solid #2F67E8; outline-offset:2px; } .ds-signal-node .ds-port { width:26px; height:26px; border:2px solid #087456; border-radius:999px; box-shadow:inset 0 0 0 9px #111820; background:#F7FAFC; } .ds-signal-node svg { width:84px; height:32px; fill:none; stroke:#667789; stroke-width:2; } .ds-signal-node svg .ds-jade { stroke:#087456; } .ds-signal-node span:last-child { display:grid; text-align:left; } .ds-signal-node strong { font-size:12px; } .ds-signal-node small { color:#AAB7C5; font-size:11px; margin-top:2px; }"
+    },
+    {
+      "name": "Error Action",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive or recovery action that must remain readable and explicit.",
+      "html": "<button class=\"ds-button-danger\">Clear history</button>",
+      "css": ".ds-button-danger { background:#FCEBED; color:#B63A50; border:0; border-radius:0; padding:10px 18px; font:700 13px 'Segoe UI',sans-serif; cursor:pointer; } .ds-button-danger:hover { background:#F8DDE1; } .ds-button-danger:active { background:#F2C8D0; } .ds-button-danger:focus-visible { outline:2px solid #B63A50; outline-offset:2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Signal Desk",
+    "overview": "AgentWisper feels like a precise audio routing desk reduced to its essential signal path. Mineral-gray workspace, paper-white surfaces, fine rules, and deep navy text keep the main app calm. Cobalt, jade, crimson, and amber communicate routing state; they are functional signals, not decoration.\n\nThe main window is a quiet control room. The persistent carbon Signal Node is its compact field instrument: visible at the edge of the active workspace, animated only while work is happening, and explicit about readiness, listening, processing, success, or failure. This visual system supports technical confidence without mimicking a centered dictation bar.",
+    "keyCharacteristics": [
+      "Light mineral workspace with precise, square-edged surfaces.",
+      "Speech shown as a route from microphone to model to active cursor.",
+      "Cobalt interaction, jade completion, amber caution, and crimson recovery states.",
+      "Carbon Signal Node as the only dark persistent surface.",
+      "Native Windows density, direct labels, and restrained motion."
+    ],
+    "rules": [
+      { "name": "The Rare Signal Rule", "body": "Signal colors mark action or state; no screen becomes a cobalt, jade, amber, or crimson field.", "section": "colors" },
+      { "name": "The One Dark Surface Rule", "body": "Carbon belongs to the floating Signal Node. Main application pages remain mineral and paper.", "section": "colors" },
+      { "name": "The Two Voices Rule", "body": "Segoe UI explains and directs; Cascadia Mono identifies machine-facing details. Never set ordinary paragraphs in mono.", "section": "typography" },
+      { "name": "The Route Before Record Rule", "body": "Show microphone, selected model, and cursor as one readable path; never reduce the primary workspace to a giant microphone control.", "section": "layout" },
+      { "name": "The Flat Workbench Rule", "body": "Main surfaces stay flat at rest; use borders, spacing, and state color before elevation.", "section": "elevation" },
+      { "name": "The Rounded Instrument Rule", "body": "Rounded forms belong to live signal controls and ports, not every container.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do keep privacy and provider routing visible in plain text.",
+      "Do use signal colors for specific states and pair them with written labels.",
+      "Do preserve the microphone-to-model-to-cursor route as the core visual metaphor.",
+      "Do keep the floating control at the active monitor edge without stealing focus.",
+      "Do use Segoe UI for human guidance and Cascadia Mono for compact machine metadata."
+    ],
+    "donts": [
+      "Don't copy Wispr Flow's centered bar or its composition.",
+      "Don't turn the app into a generic dark card dashboard.",
+      "Don't use a giant microphone as the primary workspace control.",
+      "Don't add decorative charts, fake metrics, or ornamental animation.",
+      "Don't hide recording, processing, privacy, or failure state behind color alone."
+    ]
+  }
+}

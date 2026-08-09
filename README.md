@@ -8,7 +8,7 @@ AgentWisper records from a global hotkey, shows a compact live waveform, transcr
 
 - Native Windows desktop interface
 - Right Ctrl toggle-to-talk hotkey, changeable in Settings
-- Live microphone animation and floating listening pill
+- Persistent bottom-right Signal Node with idle, listening, processing, success, and error states
 - Local Parakeet TDT 0.6B v3 transcription
 - Groq Cloud using `whisper-large-v3-turbo` or `whisper-large-v3`
 - Custom OpenAI-compatible transcription endpoint
@@ -46,6 +46,25 @@ Right Ctrl is the default. The editable hotkey dropdown also offers Left Ctrl, F
 - Standard-library HTTPS client for cloud transcription
 
 ## Quick start
+
+### Install as a Windows desktop app
+
+```powershell
+.\build.ps1
+.\install.ps1
+```
+
+This installs AgentWisper for the current user, registers it in Windows Installed Apps, and creates a Start Menu entry searchable as `AgentWisper`. Application files go to `%LOCALAPPDATA%\Programs\AgentWisper`; private settings and history remain in `%APPDATA%\AgentWisper`.
+
+The main window is a light signal-routing workspace. The always-on-top Signal Node stays at the bottom-right of the desktop: click it or press the configured hotkey to start and stop dictation; right-click it to reopen the main window.
+
+To remove the application while keeping its settings and transcript history:
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\AgentWisper\uninstall.ps1"
+```
+
+### Run from source
 
 ```powershell
 uv venv .venv --python 3.11

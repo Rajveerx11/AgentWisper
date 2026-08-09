@@ -1,0 +1,14 @@
+.venv/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+config.json
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+dist/
+build/
+*.spec.local

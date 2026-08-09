@@ -1,0 +1,15 @@
+{
+  "hotkey": "<ctrl>+<alt>+<space>",
+  "exit_hotkey": "<ctrl>+<alt>+<esc>",
+  "input_device": null,
+  "model_dir": null,
+  "workspace_path": null,
+  "paste_result": true,
+  "restore_clipboard": true,
+  "max_recording_seconds": 120,
+  "num_threads": 4,
+  "custom_terms": {
+    "AgentWisper": ["agent whisper", "agent wisper"],
+    "MyInternalService": ["my internal service"]
+  }
+}

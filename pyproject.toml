@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-whisper"
+version = "0.2.0"
+description = "Private, local technical dictation for coding-agent workflows"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=2.0,<3",
+  "pynput>=1.8,<2",
+  "pyperclip>=1.11,<2",
+  "sherpa-onnx>=1.13.4,<2",
+  "sounddevice>=0.5,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pyinstaller>=6.15,<7",
+  "pytest>=9,<10",
+]
+
+[project.scripts]
+agent-whisper = "agent_whisper.app:main"
+agent-wisper-app = "agent_whisper.gui:main"
+
+[project.urls]
+Homepage = "https://github.com/Rajveerx11/AgentWisper"
+Repository = "https://github.com/Rajveerx11/AgentWisper"
+Issues = "https://github.com/Rajveerx11/AgentWisper/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_whisper"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

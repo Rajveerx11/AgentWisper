@@ -12,6 +12,7 @@ from pynput import keyboard
 
 from agent_whisper.audio import AudioRecorder, list_input_devices, load_wave, record_for
 from agent_whisper.config import AppConfig, load_config
+from agent_whisper.hotkeys import ShortcutListener
 from agent_whisper.transcriber import ParakeetTranscriber, Transcription
 from agent_whisper.vocabulary import CorrectionEngine, CorrectionResult, scan_repository
 
@@ -55,7 +56,7 @@ class DictationApp:
         self.transcriber = ParakeetTranscriber(config.model_dir, config.num_threads)
         self._busy = False
         self._lock = threading.Lock()
-        self._listener: keyboard.GlobalHotKeys | None = None
+        self._listener: ShortcutListener | None = None
 
     def process(self, samples, sample_rate: int = 16_000) -> tuple[Transcription, CorrectionResult]:
         transcription = self.transcriber.transcribe(samples, sample_rate)
@@ -131,13 +132,14 @@ class DictationApp:
         print(f"Toggle dictation: {self.config.hotkey}")
         print(f"Exit: {self.config.exit_hotkey}")
         print("Audio and text stay on this machine.")
-        self._listener = keyboard.GlobalHotKeys(
-            {
-                self.config.hotkey: self.toggle,
-                self.config.exit_hotkey: self.stop,
-            }
+        self._listener = ShortcutListener(
+            self.config.hotkey,
+            self.toggle,
+            self.config.exit_hotkey,
+            self.stop,
         )
-        self._listener.run()
+        self._listener.start()
+        self._listener.wait()
 
 
 def _parser() -> argparse.ArgumentParser:

@@ -11,6 +11,8 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from agent_whisper.hotkeys import DEFAULT_HOTKEY, LEGACY_DEFAULT_HOTKEY
+
 APP_NAME = "AgentWisper"
 
 
@@ -25,8 +27,9 @@ def app_data_dir() -> Path:
 
 @dataclass(slots=True)
 class UserSettings:
+    settings_version: int = 2
     provider: str = "local"
-    hotkey: str = "<ctrl>+<alt>+<space>"
+    hotkey: str = DEFAULT_HOTKEY
     input_device: int | str | None = None
     local_model_dir: str = ""
     groq_model: str = "whisper-large-v3-turbo"
@@ -49,6 +52,14 @@ class SettingsStore:
             raw = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return UserSettings()
+        try:
+            settings_version = int(raw.get("settings_version", 1))
+        except (TypeError, ValueError):
+            settings_version = 1
+        if settings_version < 2:
+            if raw.get("hotkey", LEGACY_DEFAULT_HOTKEY) == LEGACY_DEFAULT_HOTKEY:
+                raw["hotkey"] = DEFAULT_HOTKEY
+            raw["settings_version"] = 2
         defaults = asdict(UserSettings())
         values = {key: raw.get(key, default) for key, default in defaults.items()}
         return UserSettings(**values)

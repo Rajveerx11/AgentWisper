@@ -12,6 +12,12 @@ def test_settings_round_trip(tmp_path: Path) -> None:
     assert loaded.hotkey == "<ctrl>+<shift>+<space>"
 
 
+def test_legacy_default_hotkey_migrates_to_right_ctrl(tmp_path: Path) -> None:
+    path = tmp_path / "settings.json"
+    path.write_text('{"hotkey": "<ctrl>+<alt>+<space>"}', encoding="utf-8")
+    assert SettingsStore(path).load().hotkey == "<ctrl_r>"
+
+
 def test_secret_store_uses_dpapi_round_trip(tmp_path: Path) -> None:
     store = SecretStore(tmp_path / "secrets.json")
     store.set("groq_api_key", "test-secret-never-log")

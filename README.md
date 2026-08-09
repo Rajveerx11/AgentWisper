@@ -7,7 +7,7 @@ AgentWisper records from a global hotkey, shows a compact live waveform, transcr
 ## What is included
 
 - Native Windows desktop interface
-- `Ctrl+Alt+Space` toggle-to-talk hotkey
+- Right Ctrl toggle-to-talk hotkey, changeable in Settings
 - Live microphone animation and floating listening pill
 - Local Parakeet TDT 0.6B v3 transcription
 - Groq Cloud using `whisper-large-v3-turbo` or `whisper-large-v3`
@@ -32,6 +32,8 @@ Stores corrected and raw transcripts locally in `%APPDATA%\AgentWisper\history.d
 ### Settings
 
 Select Local, Groq, or a custom OpenAI-compatible provider. Configure the hotkey, microphone, language, model, and paste behavior.
+
+Right Ctrl is the default. The editable hotkey dropdown also offers Left Ctrl, F8, and two Ctrl combinations.
 
 ## Tech stack
 

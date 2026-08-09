@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from agent_whisper.hotkeys import DEFAULT_HOTKEY
+
 MODEL_FOLDER = "parakeet-tdt-0.6b-v3-int8"
 MODEL_FILES = (
     "encoder.int8.onnx",
@@ -35,7 +37,7 @@ def discover_model_dir() -> Path:
 
 @dataclass(slots=True)
 class AppConfig:
-    hotkey: str = "<ctrl>+<alt>+<space>"
+    hotkey: str = DEFAULT_HOTKEY
     exit_hotkey: str = "<ctrl>+<alt>+<esc>"
     input_device: int | str | None = None
     model_dir: Path = field(default_factory=discover_model_dir)
@@ -76,7 +78,7 @@ def load_config(path: Path | None = None) -> AppConfig:
         raise TypeError("custom_terms must be an object mapping canonical terms to aliases")
 
     config = AppConfig(
-        hotkey=str(raw.get("hotkey", "<ctrl>+<alt>+<space>")),
+        hotkey=str(raw.get("hotkey", DEFAULT_HOTKEY)),
         exit_hotkey=str(raw.get("exit_hotkey", "<ctrl>+<alt>+<esc>")),
         input_device=raw.get("input_device"),
         model_dir=model_dir,

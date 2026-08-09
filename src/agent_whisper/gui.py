@@ -10,11 +10,16 @@ from tkinter import messagebox, ttk
 from typing import ClassVar
 
 import pyperclip
-from pynput import keyboard
 
 from agent_whisper.app import _paste_text
 from agent_whisper.audio import AudioRecorder, list_input_devices
 from agent_whisper.config import MODEL_FILES, discover_model_dir
+from agent_whisper.hotkeys import (
+    HOTKEY_CHOICES,
+    ShortcutListener,
+    hotkey_label,
+    normalize_hotkey,
+)
 from agent_whisper.providers import (
     GROQ_MODELS,
     CloudTranscriber,
@@ -286,7 +291,7 @@ class HomePage(tk.Frame):
         center.pack(pady=(10, 24))
         self.mic = MicControl(center, app.toggle_recording, lambda: app.recorder.level)
         self.mic.pack()
-        self.status = _label(center, "Press Ctrl + Alt + Space", 12, weight="bold")
+        self.status = _label(center, f"Press {hotkey_label(app.settings.hotkey)}", 12, weight="bold")
         self.status.pack(pady=(0, 4))
         self.status_detail = _label(
             center,
@@ -329,7 +334,7 @@ class HomePage(tk.Frame):
     def set_state(self, state: str, detail: str = "") -> None:
         self.mic.set_state(state)
         labels = {
-            "idle": "Press Ctrl + Alt + Space",
+            "idle": f"Press {hotkey_label(self.app.settings.hotkey)}",
             "listening": "Listening…",
             "transcribing": "Transcribing…",
             "error": "Could not transcribe",
@@ -620,7 +625,11 @@ class SettingsPage(tk.Frame):
         left.pack(side="left", fill="x", expand=True, padx=(0, 8))
         right.pack(side="left", fill="x", expand=True, padx=(8, 0))
         self._field_label(left, "Global hotkey")
-        self._entry(left, self.hotkey).pack(fill="x", ipady=9)
+        ttk.Combobox(
+            left,
+            textvariable=self.hotkey,
+            values=list(HOTKEY_CHOICES),
+        ).pack(fill="x")
         self._field_label(right, "Language code")
         self._entry(right, self.language).pack(fill="x", ipady=9)
 
@@ -668,7 +677,7 @@ class SettingsPage(tk.Frame):
         self.groq_model.set(settings.groq_model)
         self.custom_url.set(settings.custom_base_url)
         self.custom_model.set(settings.custom_model)
-        self.hotkey.set(settings.hotkey)
+        self.hotkey.set(hotkey_label(settings.hotkey))
         self.language.set(settings.language)
         self.local_model.set(settings.local_model_dir)
         self.paste_result.set(settings.paste_result)
@@ -688,8 +697,7 @@ class SettingsPage(tk.Frame):
 
     def save(self) -> None:
         try:
-            hotkey_value = self.hotkey.get().strip()
-            keyboard.HotKey.parse(hotkey_value)
+            hotkey_value = normalize_hotkey(self.hotkey.get())
             provider = self.PROVIDERS[self.provider_display.get()]
             local_model = Path(self.local_model.get().strip())
             if provider == "local":
@@ -759,7 +767,7 @@ class AgentWisperApp:
         self.cloud = CloudTranscriber()
         self.corrections = CorrectionEngine()
         self.events: queue.Queue[tuple[str, object]] = queue.Queue()
-        self.hotkey_listener: keyboard.GlobalHotKeys | None = None
+        self.hotkey_listener: ShortcutListener | None = None
         self.state = "idle"
 
         self._style()
@@ -767,6 +775,7 @@ class AgentWisperApp:
         self.overlay = ListeningOverlay(root, lambda: self.recorder.level)
         self._restart_hotkey()
         self._update_provider_display()
+        self.home.set_state(self.state)
         self.show_page("home")
         self.root.after(50, self._poll_events)
 
@@ -896,15 +905,16 @@ class AgentWisperApp:
         self.overlay.level_getter = lambda: self.recorder.level
         self._restart_hotkey()
         self._update_provider_display()
+        self.home.set_state(self.state)
 
     def _restart_hotkey(self) -> None:
         if self.hotkey_listener:
             self.hotkey_listener.stop()
-        self.hotkey_listener = keyboard.GlobalHotKeys(
-            {
-                self.settings.hotkey: lambda: self.events.put(("toggle", None)),
-                "<ctrl>+<alt>+<esc>": lambda: self.events.put(("exit", None)),
-            }
+        self.hotkey_listener = ShortcutListener(
+            self.settings.hotkey,
+            lambda: self.events.put(("toggle", None)),
+            "<ctrl>+<alt>+<esc>",
+            lambda: self.events.put(("exit", None)),
         )
         self.hotkey_listener.start()
 

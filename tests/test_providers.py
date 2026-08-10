@@ -7,10 +7,12 @@ import pytest
 from agent_whisper.audio import encode_wave
 from agent_whisper.providers import (
     CloudTranscriber,
+    LocalTranscriberPool,
     ProviderRequest,
     transcription_endpoint,
     validate_base_url,
 )
+from agent_whisper.transcriber import Transcription
 
 
 def test_base_url_validation() -> None:
@@ -71,4 +73,28 @@ def test_cloud_transcription_request(monkeypatch) -> None:
     assert result.text == "hello"
     assert captured["request"].full_url.startswith("https://api.groq.com/")
     assert captured["request"].get_header("Authorization") == "Bearer test-key"
-    assert captured["request"].get_header("User-agent") == "AgentWisper/0.5.0"
+    assert captured["request"].get_header("User-agent") == "AgentWisper/0.6.0"
+
+
+def test_local_pool_preloads_and_reuses_model(monkeypatch, tmp_path) -> None:
+    created = []
+
+    class FakeTranscriber:
+        def __init__(self, model_dir, num_threads):
+            created.append((model_dir, num_threads))
+
+        def transcribe(self, samples, sample_rate):
+            return Transcription("ready", 0.01, len(samples) / sample_rate)
+
+    monkeypatch.setattr(
+        "agent_whisper.providers.ParakeetTranscriber",
+        FakeTranscriber,
+    )
+    pool = LocalTranscriberPool()
+
+    assert pool.prepare(tmp_path, 4) is True
+    assert pool.prepare(tmp_path, 4) is False
+    result = pool.transcribe(np.zeros(1_600, dtype=np.float32), 16_000, tmp_path, 4)
+
+    assert result.text == "ready"
+    assert created == [(tmp_path, 4)]

@@ -14,6 +14,8 @@ from pathlib import Path
 from agent_whisper.hotkeys import DEFAULT_HOTKEY, LEGACY_DEFAULT_HOTKEY
 
 APP_NAME = "AgentWisper"
+MAX_LEARNED_MAPPINGS = 500
+MAX_ALIASES_PER_TERM = 20
 
 
 def app_data_dir() -> Path:
@@ -27,7 +29,7 @@ def app_data_dir() -> Path:
 
 @dataclass(slots=True)
 class UserSettings:
-    settings_version: int = 2
+    settings_version: int = 3
     provider: str = "local"
     hotkey: str = DEFAULT_HOTKEY
     input_device: int | str | None = None
@@ -39,6 +41,7 @@ class UserSettings:
     restore_clipboard: bool = True
     language: str = "en"
     num_threads: int = 4
+    project_path: str = ""
 
 
 class SettingsStore:
@@ -56,10 +59,13 @@ class SettingsStore:
             settings_version = int(raw.get("settings_version", 1))
         except (TypeError, ValueError):
             settings_version = 1
-        if settings_version < 2:
-            if raw.get("hotkey", LEGACY_DEFAULT_HOTKEY) == LEGACY_DEFAULT_HOTKEY:
-                raw["hotkey"] = DEFAULT_HOTKEY
-            raw["settings_version"] = 2
+        if (
+            settings_version < 2
+            and raw.get("hotkey", LEGACY_DEFAULT_HOTKEY) == LEGACY_DEFAULT_HOTKEY
+        ):
+            raw["hotkey"] = DEFAULT_HOTKEY
+        if settings_version < 3:
+            raw["settings_version"] = 3
         defaults = asdict(UserSettings())
         values = {key: raw.get(key, default) for key, default in defaults.items()}
         return UserSettings(**values)
@@ -173,6 +179,140 @@ class SecretStore:
 
     def has(self, name: str) -> bool:
         return bool(self.get(name))
+
+
+def _vocabulary_value(value: str, label: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"Enter {label}")
+    cleaned = " ".join(value.split())
+    if not cleaned:
+        raise ValueError(f"Enter {label}")
+    if len(cleaned) > 120 or any(ord(character) < 32 for character in cleaned):
+        raise ValueError(f"{label.capitalize()} is too long or contains control text")
+    return cleaned
+
+
+class VocabularyStore:
+    """Atomic local storage for corrections explicitly taught by the user."""
+
+    def __init__(self, path: Path | None = None) -> None:
+        self.path = path or app_data_dir() / "vocabulary.json"
+        self._lock = threading.Lock()
+
+    def _read(self) -> dict[str, list[str]]:
+        if not self.path.is_file():
+            return {}
+        try:
+            payload = json.loads(self.path.read_text(encoding="utf-8"))
+            records = payload.get("terms", [])
+        except (OSError, json.JSONDecodeError, AttributeError):
+            return {}
+
+        terms: dict[str, list[str]] = {}
+        seen_aliases: set[str] = set()
+        if not isinstance(records, list):
+            return terms
+        for record in records:
+            remaining = MAX_LEARNED_MAPPINGS - sum(
+                len(aliases) for aliases in terms.values()
+            )
+            if remaining <= 0:
+                break
+            if not isinstance(record, dict):
+                continue
+            try:
+                canonical = _vocabulary_value(record.get("canonical", ""), "spelling")
+            except (TypeError, ValueError):
+                continue
+            aliases = record.get("aliases", [])
+            if not isinstance(aliases, list):
+                continue
+            cleaned_aliases: list[str] = []
+            for alias in aliases[: min(MAX_ALIASES_PER_TERM, remaining)]:
+                try:
+                    cleaned = _vocabulary_value(alias, "heard phrase")
+                except (TypeError, ValueError):
+                    continue
+                if (
+                    cleaned.casefold() != canonical.casefold()
+                    and cleaned.casefold()
+                    not in {item.casefold() for item in cleaned_aliases}
+                    and cleaned.casefold() not in seen_aliases
+                ):
+                    cleaned_aliases.append(cleaned)
+                    seen_aliases.add(cleaned.casefold())
+            if cleaned_aliases:
+                terms[canonical] = cleaned_aliases
+        return terms
+
+    def _write(self, terms: dict[str, list[str]]) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        records = [
+            {"canonical": canonical, "aliases": aliases}
+            for canonical, aliases in sorted(terms.items(), key=lambda item: item[0].casefold())
+        ]
+        temporary = self.path.with_suffix(".tmp")
+        temporary.write_text(
+            json.dumps({"version": 1, "terms": records}, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        temporary.replace(self.path)
+
+    def load(self) -> dict[str, list[str]]:
+        with self._lock:
+            return self._read()
+
+    def add(self, canonical: str, alias: str) -> dict[str, list[str]]:
+        canonical = _vocabulary_value(canonical, "exact spelling")
+        alias = _vocabulary_value(alias, "heard phrase")
+        if canonical.casefold() == alias.casefold():
+            raise ValueError("Heard phrase and exact spelling must be different")
+
+        with self._lock:
+            terms = self._read()
+            existing_name = next(
+                (name for name in terms if name.casefold() == canonical.casefold()),
+                None,
+            )
+            name = existing_name or canonical
+            aliases = terms.setdefault(name, [])
+            if alias.casefold() in {item.casefold() for item in aliases}:
+                return terms
+            alias_key = alias.casefold()
+            for other_name in list(terms):
+                if other_name == name:
+                    continue
+                terms[other_name] = [
+                    item for item in terms[other_name] if item.casefold() != alias_key
+                ]
+                if not terms[other_name]:
+                    terms.pop(other_name)
+            if len(aliases) >= MAX_ALIASES_PER_TERM:
+                raise ValueError("This spelling already has the maximum spoken forms")
+            if sum(len(items) for items in terms.values()) >= MAX_LEARNED_MAPPINGS:
+                raise ValueError("Learned vocabulary limit reached")
+            aliases.append(alias)
+            self._write(terms)
+            return terms
+
+    def remove(self, canonical: str, alias: str) -> dict[str, list[str]]:
+        canonical = _vocabulary_value(canonical, "exact spelling")
+        alias = _vocabulary_value(alias, "heard phrase")
+        with self._lock:
+            terms = self._read()
+            name = next(
+                (item for item in terms if item.casefold() == canonical.casefold()),
+                None,
+            )
+            if name is None:
+                return terms
+            terms[name] = [
+                item for item in terms[name] if item.casefold() != alias.casefold()
+            ]
+            if not terms[name]:
+                terms.pop(name)
+            self._write(terms)
+            return terms
 
 
 @dataclass(frozen=True, slots=True)

@@ -173,6 +173,24 @@ class LocalTranscriberPool:
         self._threads = 0
         self._lock = threading.Lock()
 
+    def _prepare_locked(self, model_dir: Path, num_threads: int) -> bool:
+        if (
+            self._transcriber is not None
+            and self._model_dir == model_dir
+            and self._threads == num_threads
+        ):
+            return False
+        transcriber = ParakeetTranscriber(model_dir, num_threads)
+        self._transcriber = transcriber
+        self._model_dir = model_dir
+        self._threads = num_threads
+        return True
+
+    def prepare(self, model_dir: Path, num_threads: int) -> bool:
+        """Load the selected local model once, before the user needs it."""
+        with self._lock:
+            return self._prepare_locked(model_dir, num_threads)
+
     def transcribe(
         self,
         samples: np.ndarray,
@@ -181,12 +199,6 @@ class LocalTranscriberPool:
         num_threads: int,
     ) -> Transcription:
         with self._lock:
-            if (
-                self._transcriber is None
-                or self._model_dir != model_dir
-                or self._threads != num_threads
-            ):
-                self._transcriber = ParakeetTranscriber(model_dir, num_threads)
-                self._model_dir = model_dir
-                self._threads = num_threads
+            self._prepare_locked(model_dir, num_threads)
+            assert self._transcriber is not None
             return self._transcriber.transcribe(samples, sample_rate)

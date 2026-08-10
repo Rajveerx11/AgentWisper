@@ -391,6 +391,17 @@ select:focus-visible {
   background: var(--accent-hover);
 }
 
+.button-secondary {
+  border-color: var(--rule-strong);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.button-secondary:hover:not(:disabled) {
+  border-color: #8c9dad;
+  background: #e5ebf0;
+}
+
 .button-quiet {
   min-height: 32px;
   padding: 0 10px;
@@ -591,6 +602,12 @@ select:focus-visible {
   white-space: pre-wrap;
 }
 
+.history-actions {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
 #page-settings {
   padding-bottom: 0;
 }
@@ -601,7 +618,10 @@ select:focus-visible {
 
 #settings-form {
   display: flex;
+  width: calc(100vw - 260px);
+  max-width: calc(100vw - 260px);
   min-height: 0;
+  min-width: 0;
   flex: 1;
   flex-direction: column;
   overflow: hidden;
@@ -616,11 +636,15 @@ select:focus-visible {
 
 .settings-section {
   display: grid;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   grid-template-columns: minmax(190px, 0.32fr) minmax(0, 1fr);
   margin-bottom: 12px;
 }
 
 #settings-form {
+  overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable;
 }
@@ -639,12 +663,18 @@ select:focus-visible {
 }
 
 .section-content {
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
   padding: 20px;
+  overflow: hidden;
 }
 
 .provider-switch {
   display: grid;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 18px;
@@ -734,6 +764,17 @@ select:focus-visible {
   border-color: var(--accent);
 }
 
+.field-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.field-action-row .button {
+  min-width: 78px;
+  min-height: 40px;
+}
+
 .hotkey-recorder {
   display: flex;
   width: 100%;
@@ -791,6 +832,102 @@ select:focus-visible {
 
 .field-note.warning {
   color: var(--warning);
+}
+
+.learned-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.learned-heading > div {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.learned-heading strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.learned-heading span,
+.learned-heading small {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.learned-list {
+  max-height: 164px;
+  margin-top: 9px;
+  overflow-y: auto;
+  border: 1px solid var(--rule);
+}
+
+.learned-empty {
+  margin: 0;
+  padding: 14px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.learned-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 42px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 11px;
+}
+
+.learned-row:last-child {
+  border-bottom: 0;
+}
+
+.learned-row > span {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.learned-row > span > span {
+  overflow: hidden;
+  color: var(--text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.learned-row i {
+  color: var(--muted);
+  font-style: normal;
+}
+
+.learned-row code {
+  overflow: hidden;
+  color: var(--accent);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.learned-remove {
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.learned-remove:hover:not(:disabled) {
+  color: var(--danger);
 }
 
 .check-stack {
@@ -853,6 +990,90 @@ select:focus-visible {
   color: var(--success);
 }
 
+.teach-dialog {
+  width: min(520px, calc(100vw - 48px));
+  padding: 0;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--text);
+}
+
+.teach-dialog::backdrop {
+  background: rgb(17 28 46 / 32%);
+}
+
+.teach-dialog form {
+  padding: 22px;
+}
+
+.teach-dialog header,
+.teach-dialog footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.teach-dialog h2 {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 20px;
+}
+
+.dialog-kicker {
+  color: var(--success);
+  font-family: "Cascadia Mono", Consolas, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.dialog-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.dialog-close:hover {
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.teach-source {
+  max-height: 92px;
+  margin: 18px 0;
+  padding: 10px 12px;
+  overflow-y: auto;
+  border-left: 2px solid var(--accent);
+  background: var(--worktop);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.teach-dialog footer {
+  align-items: center;
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.teach-dialog footer > div {
+  display: flex;
+  gap: 8px;
+}
+
+#teach-status.is-error {
+  color: var(--danger);
+}
+
 .toast {
   position: fixed;
   z-index: 20;
@@ -881,6 +1102,11 @@ select:focus-visible {
     padding: 24px 28px 22px;
   }
 
+  #settings-form {
+    width: calc(100vw - 244px);
+    max-width: calc(100vw - 244px);
+  }
+
   .signal-stage {
     flex-basis: 166px;
     min-height: 166px;
@@ -893,5 +1119,54 @@ select:focus-visible {
   .settings-footer {
     margin-inline: -28px;
     padding-inline: 28px;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    grid-template-columns: 164px minmax(0, 1fr);
+  }
+
+  #settings-form {
+    width: calc(100vw - 220px);
+    max-width: calc(100vw - 220px);
+  }
+
+  .settings-section {
+    grid-template-columns: minmax(150px, 0.28fr) minmax(0, 1fr);
+    min-width: 0;
+  }
+
+  .section-heading,
+  .section-content {
+    padding: 16px;
+  }
+
+  .provider-switch {
+    grid-template-columns: 1fr;
+  }
+
+  .provider-option {
+    min-height: 54px;
+  }
+
+  .field-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .learned-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .history-row {
+    grid-template-columns: 96px minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .history-actions {
+    flex-direction: column;
   }
 }

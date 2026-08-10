@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ctypes
+import logging
 import os
 import threading
 import time
@@ -26,10 +27,21 @@ from agent_whisper.providers import (
     ProviderRequest,
     validate_base_url,
 )
-from agent_whisper.storage import HistoryStore, SecretStore, SettingsStore, UserSettings
-from agent_whisper.vocabulary import TECHNICAL_TERMS, CorrectionEngine
+from agent_whisper.storage import (
+    HistoryStore,
+    SecretStore,
+    SettingsStore,
+    UserSettings,
+    VocabularyStore,
+)
+from agent_whisper.vocabulary import (
+    TECHNICAL_TERMS,
+    CorrectionEngine,
+    scan_repository,
+)
 
 MAX_RECORDING_SECONDS = 120
+logger = logging.getLogger(__name__)
 
 
 class DesktopController:
@@ -50,7 +62,13 @@ class DesktopController:
         )
         self.local_pool = LocalTranscriberPool()
         self.cloud = CloudTranscriber()
-        self.corrections = CorrectionEngine()
+        self.vocabulary_store = VocabularyStore()
+        self.learned_terms = self.vocabulary_store.load()
+        self.project_terms = self._scan_project(self.settings.project_path)
+        self.corrections = CorrectionEngine(
+            custom_terms=self.learned_terms,
+            repository_terms=self.project_terms,
+        )
         self.hotkey_listener: ShortcutListener | None = None
 
         latest = self.history_store.list(limit=1)
@@ -69,10 +87,41 @@ class DesktopController:
         self._shutdown = False
         self._hotkey_capture_active = False
 
+    @staticmethod
+    def _scan_project(project_path: str) -> dict[str, list[str]]:
+        if not project_path:
+            return {}
+        try:
+            path = Path(project_path).expanduser()
+            return scan_repository(path) if path.is_dir() else {}
+        except OSError:
+            return {}
+
     def start(self) -> None:
         listener = self._make_hotkey_listener(self.settings.hotkey)
         listener.start()
         self.hotkey_listener = listener
+        self._preload_local_model(replace(self.settings))
+
+    def _preload_local_model(self, settings: UserSettings) -> None:
+        if settings.provider != "local":
+            return
+
+        def prepare() -> None:
+            try:
+                self.local_pool.prepare(
+                    Path(settings.local_model_dir),
+                    settings.num_threads,
+                )
+            except Exception:
+                # Dictation reports the actionable error if loading still fails.
+                logger.exception("Could not preload the local transcription model")
+
+        threading.Thread(
+            target=prepare,
+            daemon=True,
+            name="AgentWisperModelPreload",
+        ).start()
 
     def _make_hotkey_listener(self, hotkey: str) -> ShortcutListener:
         return ShortcutListener(
@@ -343,9 +392,51 @@ class DesktopController:
                 "hotkey_label": hotkey_label(payload["hotkey"]),
                 "groq_key_saved": self.secret_store.has("groq_api_key"),
                 "custom_key_saved": self.secret_store.has("custom_api_key"),
+                "project_term_count": len(self.project_terms),
             }
         )
         return payload
+
+    def vocabulary_payload(self) -> dict[str, Any]:
+        with self._lock:
+            learned = [
+                {"canonical": canonical, "alias": alias}
+                for canonical, aliases in sorted(
+                    self.learned_terms.items(),
+                    key=lambda item: item[0].casefold(),
+                )
+                for alias in aliases
+            ]
+            return {
+                "project_path": self.settings.project_path,
+                "project_term_count": len(self.project_terms),
+                "learned": learned,
+            }
+
+    def _apply_learned_terms(self, terms: dict[str, list[str]]) -> None:
+        with self._lock:
+            self.learned_terms = terms
+            self.corrections = CorrectionEngine(
+                custom_terms=self.learned_terms,
+                repository_terms=self.project_terms,
+            )
+            self.version += 1
+
+    def teach_correction(self, alias: str, canonical: str) -> dict[str, Any]:
+        with self._lock:
+            if self.state in {"listening", "transcribing"}:
+                raise ValueError("Finish the current dictation before teaching a correction")
+        terms = self.vocabulary_store.add(canonical, alias)
+        self._apply_learned_terms(terms)
+        return self.vocabulary_payload()
+
+    def forget_correction(self, alias: str, canonical: str) -> dict[str, Any]:
+        with self._lock:
+            if self.state in {"listening", "transcribing"}:
+                raise ValueError("Finish the current dictation before removing a correction")
+        terms = self.vocabulary_store.remove(canonical, alias)
+        self._apply_learned_terms(terms)
+        return self.vocabulary_payload()
 
     def bootstrap(self) -> dict[str, Any]:
         device_error = ""
@@ -360,6 +451,7 @@ class DesktopController:
         return {
             "runtime": self.runtime(),
             "settings": self.settings_payload(),
+            "vocabulary": self.vocabulary_payload(),
             "history": self.history(),
             "devices": devices,
             "device_error": device_error,
@@ -443,14 +535,26 @@ class DesktopController:
         custom_key = str(payload.get("custom_api_key", "")).strip()
         if len(groq_key) > 4_096 or len(custom_key) > 4_096:
             raise ValueError("API key is unexpectedly long")
-        if groq_key:
-            self.secret_store.set("groq_api_key", groq_key)
-        if custom_key:
-            self.secret_store.set("custom_api_key", custom_key)
-        if provider == "groq" and not self.secret_store.has("groq_api_key"):
+        if provider == "groq" and not (
+            groq_key or self.secret_store.has("groq_api_key")
+        ):
             raise ValueError("Enter a Groq API key")
-        if provider == "custom" and not self.secret_store.has("custom_api_key"):
+        if provider == "custom" and not (
+            custom_key or self.secret_store.has("custom_api_key")
+        ):
             raise ValueError("Enter an API key for the custom provider")
+
+        project_path = str(payload.get("project_path", "")).strip()
+        project_terms: dict[str, list[str]] = {}
+        if project_path:
+            project = Path(project_path).expanduser()
+            if not project.is_dir():
+                raise ValueError("Choose an existing project folder")
+            try:
+                project_path = str(project.resolve())
+                project_terms = scan_repository(project)
+            except OSError as exc:
+                raise ValueError(f"Project folder could not be scanned: {exc}") from None
 
         settings = UserSettings(
             provider=provider,
@@ -464,28 +568,42 @@ class DesktopController:
             restore_clipboard=bool(payload.get("restore_clipboard", True)),
             language=language,
             num_threads=self.settings.num_threads,
+            project_path=project_path,
         )
 
         new_listener = self._make_hotkey_listener(settings.hotkey)
         new_listener.start()
         try:
-            self.settings_store.save(settings)
+            with self._lock:
+                if self.state in {"listening", "transcribing"}:
+                    raise ValueError(
+                        "Finish the current dictation before saving settings"
+                    )
+                if groq_key:
+                    self.secret_store.set("groq_api_key", groq_key)
+                if custom_key:
+                    self.secret_store.set("custom_api_key", custom_key)
+                self.settings_store.save(settings)
+                old_listener = self.hotkey_listener
+                self.hotkey_listener = new_listener
+                self._hotkey_capture_active = False
+                self.settings = settings
+                self.project_terms = project_terms
+                self.corrections = CorrectionEngine(
+                    custom_terms=self.learned_terms,
+                    repository_terms=self.project_terms,
+                )
+                self.recorder = AudioRecorder(
+                    settings.input_device,
+                    max_recording_seconds=MAX_RECORDING_SECONDS,
+                )
+                self.version += 1
         except Exception:
             new_listener.stop()
             raise
-
-        with self._lock:
-            old_listener = self.hotkey_listener
-            self.hotkey_listener = new_listener
-            self._hotkey_capture_active = False
-            self.settings = settings
-            self.recorder = AudioRecorder(
-                settings.input_device,
-                max_recording_seconds=MAX_RECORDING_SECONDS,
-            )
-            self.version += 1
         if old_listener:
             old_listener.stop()
+        self._preload_local_model(replace(settings))
         return self.settings_payload()
 
     def clear_history(self) -> None:

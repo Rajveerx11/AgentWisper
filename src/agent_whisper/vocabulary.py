@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import tomllib
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 TECHNICAL_TERMS: dict[str, tuple[str, ...]] = {
@@ -68,6 +69,10 @@ SKIP_DIRECTORIES = {
     "vendor",
     "__pycache__",
 }
+MAX_REPOSITORY_TERMS = 500
+MAX_REPOSITORY_FILES = 2_000
+MAX_MANIFEST_BYTES = 1_000_000
+MAX_MANIFEST_TERMS = 2_000
 
 
 @dataclass(frozen=True, slots=True)
@@ -96,73 +101,181 @@ def _package_name(requirement: str) -> str:
     return re.split(r"[<>=!~\[ ;]", requirement, maxsplit=1)[0].strip()
 
 
-def _manifest_terms(workspace: Path) -> set[str]:
+def _read_manifest_text(path: Path) -> str | None:
+    try:
+        with path.open("rb") as source:
+            raw = source.read(MAX_MANIFEST_BYTES + 1)
+        if len(raw) > MAX_MANIFEST_BYTES:
+            return None
+        return raw.decode("utf-8")
+    except (OSError, UnicodeError):
+        return None
+
+
+def _add_manifest_terms(
+    terms: set[str],
+    values: Iterable[str],
+    remaining: int,
+) -> int:
+    inspected = 0
+    for value in values:
+        if inspected >= remaining:
+            break
+        inspected += 1
+        if value:
+            terms.add(value)
+    return inspected
+
+
+def _manifest_terms(workspace: Path, file_budget: int) -> tuple[set[str], int]:
     terms: set[str] = set()
+    files_read = 0
+    entries_inspected = 0
 
     package_json = workspace / "package.json"
-    if package_json.is_file():
+    if files_read < file_budget and package_json.is_file():
+        files_read += 1
         try:
-            data = json.loads(package_json.read_text(encoding="utf-8"))
-            for section in ("dependencies", "devDependencies", "peerDependencies"):
-                terms.update(str(name) for name in data.get(section, {}))
-        except (OSError, json.JSONDecodeError):
+            content = _read_manifest_text(package_json)
+            data = json.loads(content) if content is not None else None
+            if isinstance(data, dict):
+                for section in (
+                    "dependencies",
+                    "devDependencies",
+                    "peerDependencies",
+                ):
+                    dependencies = data.get(section, {})
+                    if isinstance(dependencies, dict):
+                        entries_inspected += _add_manifest_terms(
+                            terms,
+                            map(str, dependencies),
+                            MAX_MANIFEST_TERMS - entries_inspected,
+                        )
+        except json.JSONDecodeError:
             pass
 
     pyproject = workspace / "pyproject.toml"
-    if pyproject.is_file():
+    if files_read < file_budget and pyproject.is_file():
+        files_read += 1
         try:
-            data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+            content = _read_manifest_text(pyproject)
+            data = tomllib.loads(content) if content is not None else {}
             project = data.get("project", {})
-            terms.update(
-                _package_name(item) for item in project.get("dependencies", [])
+            if isinstance(project, dict):
+                dependencies = project.get("dependencies", [])
+                if isinstance(dependencies, list):
+                    entries_inspected += _add_manifest_terms(
+                        terms,
+                        (
+                            _package_name(item)
+                            for item in dependencies
+                            if isinstance(item, str)
+                        ),
+                        MAX_MANIFEST_TERMS - entries_inspected,
+                    )
+            tool = data.get("tool", {})
+            poetry = tool.get("poetry", {}) if isinstance(tool, dict) else {}
+            dependencies = (
+                poetry.get("dependencies", {}) if isinstance(poetry, dict) else {}
             )
-            poetry = data.get("tool", {}).get("poetry", {}).get("dependencies", {})
-            terms.update(str(name) for name in poetry if name.lower() != "python")
-        except (OSError, tomllib.TOMLDecodeError):
+            if isinstance(dependencies, dict):
+                entries_inspected += _add_manifest_terms(
+                    terms,
+                    (str(name) for name in dependencies if name.lower() != "python"),
+                    MAX_MANIFEST_TERMS - entries_inspected,
+                )
+        except tomllib.TOMLDecodeError:
             pass
 
     cargo = workspace / "Cargo.toml"
-    if cargo.is_file():
+    if files_read < file_budget and cargo.is_file():
+        files_read += 1
         try:
-            data = tomllib.loads(cargo.read_text(encoding="utf-8"))
+            content = _read_manifest_text(cargo)
+            data = tomllib.loads(content) if content is not None else {}
             for section in ("dependencies", "dev-dependencies", "build-dependencies"):
-                terms.update(str(name) for name in data.get(section, {}))
-        except (OSError, tomllib.TOMLDecodeError):
+                dependencies = data.get(section, {})
+                if isinstance(dependencies, dict):
+                    entries_inspected += _add_manifest_terms(
+                        terms,
+                        map(str, dependencies),
+                        MAX_MANIFEST_TERMS - entries_inspected,
+                    )
+        except tomllib.TOMLDecodeError:
             pass
 
-    return {term for term in terms if term}
+    return terms, files_read
 
 
 def scan_repository(workspace: Path, max_files: int = 2_000) -> dict[str, list[str]]:
     if not workspace.is_dir():
         return {}
 
-    canonical_terms = _manifest_terms(workspace)
-    visited = 0
-    for path in workspace.rglob("*"):
-        if visited >= max_files:
+    file_limit = max(1, min(int(max_files), MAX_REPOSITORY_FILES))
+    canonical_terms, visited = _manifest_terms(workspace, file_limit)
+    skipped = {name.casefold() for name in SKIP_DIRECTORIES}
+    for root, directories, filenames in os.walk(
+        workspace,
+        topdown=True,
+        onerror=lambda _error: None,
+        followlinks=False,
+    ):
+        directories[:] = sorted(
+            name for name in directories if name.casefold() not in skipped
+        )
+        for filename in sorted(filenames):
+            if visited >= file_limit:
+                break
+            visited += 1
+            stem = Path(root, filename).stem
+            if _is_distinct_identifier(stem) and 3 <= len(stem) <= 80:
+                canonical_terms.add(stem)
+        if visited >= file_limit:
             break
-        if any(part in SKIP_DIRECTORIES for part in path.parts):
-            continue
-        if not path.is_file():
-            continue
-        visited += 1
-        stem = path.stem
-        if _is_distinct_identifier(stem) and 3 <= len(stem) <= 80:
-            canonical_terms.add(stem)
 
     result: dict[str, list[str]] = {}
     for canonical in sorted(canonical_terms, key=str.casefold):
         spoken = identifier_to_spoken(canonical)
         if spoken and spoken.casefold() != canonical.casefold():
             result[canonical] = [spoken]
+            if len(result) >= MAX_REPOSITORY_TERMS:
+                break
     return result
 
 
-def _phrase_pattern(alias: str) -> re.Pattern[str]:
-    pieces = [re.escape(piece) for piece in alias.split()]
-    body = r"\s+".join(pieces)
-    return re.compile(rf"(?<!\w){body}(?!\w)", flags=re.IGNORECASE)
+@dataclass(slots=True)
+class _TrieNode:
+    children: dict[str, _TrieNode] = field(default_factory=dict)
+    rule_index: int | None = None
+
+
+def _normalize_for_match(text: str) -> tuple[str, list[int], list[int]]:
+    normalized: list[str] = []
+    starts: list[int] = []
+    ends: list[int] = []
+    index = 0
+    while index < len(text):
+        start = index
+        if text[index].isspace():
+            index += 1
+            while index < len(text) and text[index].isspace():
+                index += 1
+            normalized.append(" ")
+            starts.append(start)
+            ends.append(index)
+            continue
+
+        folded = text[index].casefold()
+        index += 1
+        for character in folded:
+            normalized.append(character)
+            starts.append(start)
+            ends.append(index)
+    return "".join(normalized), starts, ends
+
+
+def _is_word_character(character: str) -> bool:
+    return character == "_" or character.isalnum()
 
 
 class CorrectionEngine:
@@ -171,30 +284,69 @@ class CorrectionEngine:
         custom_terms: dict[str, Iterable[str]] | None = None,
         repository_terms: dict[str, Iterable[str]] | None = None,
     ) -> None:
-        merged: dict[str, list[str]] = {
-            canonical: list(aliases) for canonical, aliases in TECHNICAL_TERMS.items()
-        }
-        for source in (repository_terms or {}, custom_terms or {}):
+        rules: list[tuple[str, str]] = []
+        seen_aliases: set[str] = set()
+        for source in (
+            custom_terms or {},
+            repository_terms or {},
+            TECHNICAL_TERMS,
+        ):
             for canonical, aliases in source.items():
-                merged.setdefault(canonical, []).extend(str(alias) for alias in aliases)
-
-        rules: list[tuple[re.Pattern[str], str, str]] = []
-        for canonical, aliases in merged.items():
-            for alias in aliases:
-                clean_alias = re.sub(r"\s+", " ", alias).strip()
-                if clean_alias:
-                    rules.append((_phrase_pattern(clean_alias), clean_alias, canonical))
-        self._rules = sorted(rules, key=lambda item: len(item[1]), reverse=True)
+                for alias in aliases:
+                    clean_alias = re.sub(r"\s+", " ", str(alias)).strip()
+                    alias_key = clean_alias.casefold()
+                    if clean_alias and alias_key not in seen_aliases:
+                        seen_aliases.add(alias_key)
+                        rules.append((clean_alias, canonical))
+        self._rules = sorted(rules, key=lambda item: len(item[0]), reverse=True)
+        self._trie = _TrieNode()
+        for rule_index, (alias, _canonical) in enumerate(self._rules):
+            node = self._trie
+            normalized_alias, _starts, _ends = _normalize_for_match(alias)
+            for character in normalized_alias:
+                node = node.children.setdefault(character, _TrieNode())
+            node.rule_index = rule_index
 
     @property
     def rule_count(self) -> int:
         return len(self._rules)
 
     def correct(self, text: str) -> CorrectionResult:
-        corrected = text
+        if not text or not self._trie.children:
+            return CorrectionResult(text, ())
+
+        normalized, starts, ends = _normalize_for_match(text)
+        candidates: list[tuple[int, int, int]] = []
+        for start in range(len(normalized)):
+            if start and _is_word_character(normalized[start - 1]):
+                continue
+            node = self._trie
+            for end in range(start, len(normalized)):
+                node = node.children.get(normalized[end])
+                if node is None:
+                    break
+                if node.rule_index is not None and (
+                    end + 1 == len(normalized)
+                    or not _is_word_character(normalized[end + 1])
+                ):
+                    candidates.append((starts[start], ends[end], node.rule_index))
+
+        selected: list[tuple[int, int, int]] = []
+        cursor = 0
+        for candidate in sorted(candidates, key=lambda item: (item[0], item[2])):
+            if candidate[0] >= cursor:
+                selected.append(candidate)
+                cursor = candidate[1]
+        if not selected:
+            return CorrectionResult(text, ())
+
+        pieces: list[str] = []
         applied: list[tuple[str, str]] = []
-        for pattern, alias, canonical in self._rules:
-            corrected, count = pattern.subn(canonical, corrected)
-            if count:
-                applied.append((alias, canonical))
-        return CorrectionResult(corrected, tuple(applied))
+        cursor = 0
+        for start, end, rule_index in selected:
+            alias, canonical = self._rules[rule_index]
+            pieces.extend((text[cursor:start], canonical))
+            applied.append((alias, canonical))
+            cursor = end
+        pieces.append(text[cursor:])
+        return CorrectionResult("".join(pieces), tuple(applied))

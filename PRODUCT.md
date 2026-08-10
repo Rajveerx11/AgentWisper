@@ -33,6 +33,8 @@ Local-first developer dictation with an opinionated technical vocabulary and exp
 - Closing the management window hides it while dictation keeps running; a second launch reopens the existing instance.
 - Local Parakeet v3, Groq, and custom OpenAI-compatible transcription providers.
 - Local SQLite transcript history using WAL durability; audio is discarded after transcription.
+- Optional bounded local project scan supplies exact dependency and identifier spellings.
+- Explicit corrections taught from history are stored locally and remain individually removable.
 - API keys are protected with Windows DPAPI.
 - Must stay lightweight and avoid speculative features.
 - The floating voice surface may learn from ambient dictation products but must not copy Wispr Flow's centered bar.

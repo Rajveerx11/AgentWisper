@@ -10,6 +10,9 @@ AgentWisper records from a global hotkey, shows a compact live waveform, transcr
 - Right Ctrl push-to-talk default, plus capture for any single keyboard key
 - Persistent bottom-right Signal Node with idle, listening, processing, success, and error states
 - Local Parakeet TDT 0.6B v3 transcription
+- Background model preloading for fast first dictation
+- Project-aware technical spelling from one local repository
+- Learned corrections taught directly from transcript history
 - Groq Cloud using `whisper-large-v3-turbo` or `whisper-large-v3`
 - Custom OpenAI-compatible transcription endpoint
 - Windows DPAPI-encrypted API keys
@@ -31,7 +34,13 @@ Stores corrected and raw transcripts locally in `%APPDATA%\AgentWisper\history.d
 
 ### Settings
 
-Select Local, Groq, or a custom OpenAI-compatible provider. Configure the hotkey, microphone, language, model, and paste behavior.
+Select Local, Groq, or a custom OpenAI-compatible provider. Configure the hotkey, microphone, language, model, project vocabulary, and paste behavior.
+
+### Developer vocabulary
+
+Select an optional local repository in Settings. AgentWisper scans up to 2,000 files, skips dependency and build folders, and learns exact dependency and identifier spellings without uploading or editing repository content.
+
+Use **Teach correction** beside any history item to save a heard phrase and its exact spelling. Learned pairs are stored in `%APPDATA%\AgentWisper\vocabulary.json`, apply after local or cloud transcription, and can be removed individually in Settings.
 
 Right Ctrl is the default. In Settings, click the hotkey control and press any single keyboard key to capture it. Dedicated function or media keys are recommended; ordinary letter keys will also trigger while typing.
 

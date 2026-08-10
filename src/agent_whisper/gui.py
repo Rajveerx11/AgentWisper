@@ -7,13 +7,12 @@ import threading
 from importlib.resources import files
 from typing import Any
 
-import webview
-
 from agent_whisper.desktop import DesktopController
 from agent_whisper.overlay import OverlayProcess
 from agent_whisper.windows_runtime import SingleInstance
 
 logger = logging.getLogger(__name__)
+DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = ctypes.c_void_p(-4)
 
 LOADING_INTERFACE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -40,10 +39,10 @@ class DesktopApi:
 
     def __init__(self, controller: DesktopController) -> None:
         self._controller = controller
-        self._window: webview.Window | None = None
+        self._window: Any | None = None
         self._overlay: OverlayProcess | None = None
 
-    def attach(self, window: webview.Window, overlay: OverlayProcess) -> None:
+    def attach(self, window: Any, overlay: OverlayProcess) -> None:
         self._window = window
         self._overlay = overlay
 
@@ -55,6 +54,9 @@ class DesktopApi:
 
     def get_history(self) -> list[dict[str, Any]]:
         return self._controller.history()
+
+    def get_vocabulary(self) -> dict[str, Any]:
+        return self._controller.vocabulary_payload()
 
     def toggle_recording(self) -> bool:
         return self._controller.toggle_recording()
@@ -81,6 +83,23 @@ class DesktopApi:
     def preview_hotkey(self, value: str) -> dict[str, str]:
         return self._controller.preview_hotkey(value)
 
+    def teach_correction(self, alias: str, canonical: str) -> dict[str, Any]:
+        return self._controller.teach_correction(alias, canonical)
+
+    def forget_correction(self, alias: str, canonical: str) -> dict[str, Any]:
+        return self._controller.forget_correction(alias, canonical)
+
+    def choose_project_folder(self) -> str:
+        if not self._window:
+            return ""
+        from webview import FileDialog
+
+        selected = self._window.create_file_dialog(
+            FileDialog.FOLDER,
+            allow_multiple=False,
+        )
+        return str(selected[0]) if selected else ""
+
     def hide_window(self) -> bool:
         if self._window:
             self._window.hide()
@@ -98,9 +117,23 @@ def _set_windows_app_id() -> None:
         pass
 
 
+def _set_windows_dpi_awareness() -> None:
+    try:
+        ctypes.windll.user32.SetProcessDpiAwarenessContext(
+            DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+        )
+    except (AttributeError, OSError):
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(2)
+        except (AttributeError, OSError):
+            pass
+
+
 def main() -> None:
     multiprocessing.freeze_support()
+    _set_windows_dpi_awareness()
     _set_windows_app_id()
+    import webview
 
     instance = SingleInstance()
     if not instance.is_primary:
@@ -183,7 +216,7 @@ def main() -> None:
             debug=False,
             http_server=False,
             private_mode=True,
-            user_agent="AgentWisper/0.5.0",
+            user_agent="AgentWisper/0.6.0",
         )
     finally:
         stop_instance_watcher.set()

@@ -21,6 +21,7 @@
   const ui = {
     runtime: null,
     settings: null,
+    vocabulary: null,
     history: [],
     provider: "local",
     page: "speak",
@@ -191,6 +192,7 @@
     $("#language").value = settings.language || "en";
     $("#paste-result").checked = Boolean(settings.paste_result);
     $("#restore-clipboard").checked = Boolean(settings.restore_clipboard);
+    $("#project-path").value = settings.project_path || "";
     $("#groq-key-status").textContent = settings.groq_key_saved
       ? "API key saved · encrypted with Windows DPAPI."
       : "No API key saved · encrypted with Windows DPAPI when added.";
@@ -200,6 +202,7 @@
     const deviceError = $("#device-error");
     deviceError.textContent = bootstrap.device_error || "";
     deviceError.classList.toggle("is-hidden", !bootstrap.device_error);
+    renderVocabulary(bootstrap.vocabulary);
   }
 
   async function finishHotkeyCapture(message = "Click, then press any keyboard key") {
@@ -252,7 +255,105 @@
       language: $("#language").value,
       paste_result: $("#paste-result").checked,
       restore_clipboard: $("#restore-clipboard").checked,
+      project_path: $("#project-path").value,
     };
+  }
+
+  function renderVocabulary(vocabulary) {
+    ui.vocabulary = vocabulary;
+    const projectStatus = $("#project-term-status");
+    projectStatus.textContent = vocabulary.project_path
+      ? `${vocabulary.project_term_count} project spelling${vocabulary.project_term_count === 1 ? "" : "s"} ready · scan stays on this PC.`
+      : "No project folder selected.";
+
+    const learned = vocabulary.learned || [];
+    $("#learned-count").textContent = `${learned.length} saved`;
+    const list = $("#learned-list");
+    list.replaceChildren();
+    if (!learned.length) {
+      const empty = document.createElement("p");
+      empty.className = "learned-empty";
+      empty.textContent = "No learned corrections yet.";
+      list.append(empty);
+      return;
+    }
+
+    learned.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "learned-row";
+      const mapping = document.createElement("span");
+      const alias = document.createElement("span");
+      alias.textContent = item.alias;
+      const separator = document.createElement("i");
+      separator.textContent = "becomes";
+      const canonical = document.createElement("code");
+      canonical.textContent = item.canonical;
+      mapping.append(alias, separator, canonical);
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "learned-remove";
+      remove.textContent = "Remove";
+      remove.setAttribute("aria-label", `Remove correction ${item.alias} to ${item.canonical}`);
+      remove.addEventListener("click", async () => {
+        remove.disabled = true;
+        try {
+          renderVocabulary(
+            await window.pywebview.api.forget_correction(item.alias, item.canonical),
+          );
+          showToast("Correction removed");
+        } catch (error) {
+          remove.disabled = false;
+          showToast(error.message || String(error));
+        }
+      });
+      row.append(mapping, remove);
+      list.append(row);
+    });
+  }
+
+  function suggestedCorrection(item) {
+    const before = String(item.raw_text || "").trim().split(/\s+/).filter(Boolean);
+    const after = String(item.text || "").trim().split(/\s+/).filter(Boolean);
+    let prefix = 0;
+    while (
+      prefix < before.length &&
+      prefix < after.length &&
+      before[prefix].toLocaleLowerCase() === after[prefix].toLocaleLowerCase()
+    ) {
+      prefix += 1;
+    }
+    let suffix = 0;
+    while (
+      suffix < before.length - prefix &&
+      suffix < after.length - prefix &&
+      before[before.length - 1 - suffix].toLocaleLowerCase() ===
+        after[after.length - 1 - suffix].toLocaleLowerCase()
+    ) {
+      suffix += 1;
+    }
+    const alias = before.slice(prefix, before.length - suffix).join(" ");
+    const canonical = after.slice(prefix, after.length - suffix).join(" ");
+    if (!alias || !canonical || alias.length > 120 || canonical.length > 120) {
+      return { alias: "", canonical: "" };
+    }
+    return { alias, canonical };
+  }
+
+  function openTeachDialog(item) {
+    const dialog = $("#teach-dialog");
+    const suggestion = suggestedCorrection(item);
+    $("#teach-source").textContent = `Transcript context: ${item.raw_text || item.text}`;
+    $("#teach-alias").value = suggestion.alias;
+    $("#teach-canonical").value = suggestion.canonical;
+    $("#teach-status").className = "";
+    $("#teach-status").textContent = "Saved only on this PC.";
+    dialog.showModal();
+    $(suggestion.alias ? "#teach-canonical" : "#teach-alias").focus();
+  }
+
+  function closeTeachDialog() {
+    const dialog = $("#teach-dialog");
+    if (dialog.open) dialog.close();
   }
 
   function localDateParts(value) {
@@ -321,15 +422,23 @@
       const copy = document.createElement("p");
       copy.className = "history-copy";
       copy.textContent = item.text;
-      const button = document.createElement("button");
-      button.className = "button button-quiet";
-      button.type = "button";
-      button.textContent = "Copy";
-      button.addEventListener("click", async () => {
+      const actions = document.createElement("div");
+      actions.className = "history-actions";
+      const teach = document.createElement("button");
+      teach.className = "button button-quiet";
+      teach.type = "button";
+      teach.textContent = "Teach correction";
+      teach.addEventListener("click", () => openTeachDialog(item));
+      const copyButton = document.createElement("button");
+      copyButton.className = "button button-quiet";
+      copyButton.type = "button";
+      copyButton.textContent = "Copy";
+      copyButton.addEventListener("click", async () => {
         await window.pywebview.api.copy_text(item.text);
         showToast("Transcript copied");
       });
-      row.append(meta, copy, button);
+      actions.append(teach, copyButton);
+      row.append(meta, copy, actions);
       list.append(row);
     });
   }
@@ -595,6 +704,47 @@
     if (await window.pywebview.api.copy_latest()) showToast("Transcript copied");
   });
 
+  $("#choose-project").addEventListener("click", async () => {
+    try {
+      const selected = await window.pywebview.api.choose_project_folder();
+      if (!selected) return;
+      $("#project-path").value = selected;
+      $("#project-term-status").textContent = "Save settings to scan this folder locally.";
+    } catch (error) {
+      showToast(error.message || String(error));
+    }
+  });
+
+  $("#close-teach-dialog").addEventListener("click", closeTeachDialog);
+  $("#cancel-teach").addEventListener("click", closeTeachDialog);
+  $("#teach-dialog").addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) closeTeachDialog();
+  });
+  $("#teach-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = $("#save-teach");
+    const status = $("#teach-status");
+    button.disabled = true;
+    button.textContent = "Saving…";
+    status.className = "";
+    status.textContent = "Validating correction…";
+    try {
+      const vocabulary = await window.pywebview.api.teach_correction(
+        $("#teach-alias").value,
+        $("#teach-canonical").value,
+      );
+      renderVocabulary(vocabulary);
+      closeTeachDialog();
+      showToast("Correction learned");
+    } catch (error) {
+      status.className = "is-error";
+      status.textContent = error.message || String(error);
+    } finally {
+      button.disabled = false;
+      button.textContent = "Save correction";
+    }
+  });
+
   $("#clear-history").addEventListener("click", async (event) => {
     const button = event.currentTarget;
     if (!ui.clearArmed) {
@@ -632,6 +782,7 @@
       $("#hotkey-display").textContent = settings.hotkey_label;
       $("#groq-api-key").value = "";
       $("#custom-api-key").value = "";
+      renderVocabulary(await window.pywebview.api.get_vocabulary());
       $("#groq-key-status").textContent = settings.groq_key_saved
         ? "API key saved · encrypted with Windows DPAPI."
         : "No API key saved · encrypted when added.";

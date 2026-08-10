@@ -6,8 +6,8 @@ AgentWisper records from a global hotkey, shows a compact live waveform, transcr
 
 ## What is included
 
-- Native Windows desktop interface
-- Right Ctrl toggle-to-talk hotkey, changeable in Settings
+- Lightweight HTML/CSS Windows desktop interface powered by WebView2
+- Right Ctrl push-to-talk hotkey, changeable in Settings
 - Persistent bottom-right Signal Node with idle, listening, processing, success, and error states
 - Local Parakeet TDT 0.6B v3 transcription
 - Groq Cloud using `whisper-large-v3-turbo` or `whisper-large-v3`
@@ -38,7 +38,8 @@ Right Ctrl is the default. The editable hotkey dropdown also offers Left Ctrl, F
 ## Tech stack
 
 - Python 3.11
-- Tkinter native UI
+- Local HTML, CSS, and JavaScript inside the Windows WebView2 runtime
+- A small native Python Signal Node for the always-on-top voice surface
 - sherpa-onnx and local Parakeet
 - sounddevice microphone capture
 - SQLite from the Python standard library
@@ -56,7 +57,9 @@ Right Ctrl is the default. The editable hotkey dropdown also offers Left Ctrl, F
 
 This installs AgentWisper for the current user, registers it in Windows Installed Apps, and creates a Start Menu entry searchable as `AgentWisper`. Application files go to `%LOCALAPPDATA%\Programs\AgentWisper`; private settings and history remain in `%APPDATA%\AgentWisper`.
 
-The main window is a light signal-routing workspace. The always-on-top Signal Node stays at the bottom-right of the desktop: click it or press the configured hotkey to start and stop dictation; right-click it to reopen the main window.
+The main window is a light signal-routing workspace. Hold the configured hotkey to record and release it to transcribe. The always-on-top Signal Node stays at the bottom-right of the desktop; click it for mouse control or right-click it to reopen the main window.
+
+Closing the main window hides it instead of stopping AgentWisper. The Signal Node and global hotkey keep running in the background. Launching AgentWisper again reopens the existing window instead of starting a duplicate process. To stop it completely, end `AgentWisper.exe` in Task Manager or uninstall it.
 
 To remove the application while keeping its settings and transcript history:
 
@@ -130,7 +133,10 @@ The ONNX model is intentionally external and is not bundled into the executable 
 ## Project layout
 
 ```text
-src/agent_whisper/gui.py          Desktop UI and recording workflow
+src/agent_whisper/gui.py          WebView2 desktop host and lifecycle
+src/agent_whisper/desktop.py      Recording and transcription controller
+src/agent_whisper/overlay.py      Native always-on-top Signal Node
+src/agent_whisper/web/            Local HTML, CSS, and JavaScript interface
 src/agent_whisper/providers.py    Local, Groq, and compatible providers
 src/agent_whisper/storage.py      Settings, encrypted secrets, SQLite history
 src/agent_whisper/audio.py        Microphone and WAV handling

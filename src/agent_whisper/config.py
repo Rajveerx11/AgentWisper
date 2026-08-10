@@ -49,7 +49,9 @@ class AppConfig:
     custom_terms: dict[str, list[str]] = field(default_factory=dict)
 
     def validate(self) -> None:
-        missing = [name for name in MODEL_FILES if not (self.model_dir / name).is_file()]
+        missing = [
+            name for name in MODEL_FILES if not (self.model_dir / name).is_file()
+        ]
         if missing:
             raise FileNotFoundError(
                 f"Model directory {self.model_dir} is missing: {', '.join(missing)}"
@@ -75,7 +77,9 @@ def load_config(path: Path | None = None) -> AppConfig:
     workspace_path = _optional_path(raw.get("workspace_path"))
     custom_terms = raw.get("custom_terms", {})
     if not isinstance(custom_terms, dict):
-        raise TypeError("custom_terms must be an object mapping canonical terms to aliases")
+        raise TypeError(
+            "custom_terms must be an object mapping canonical terms to aliases"
+        )
 
     config = AppConfig(
         hotkey=str(raw.get("hotkey", DEFAULT_HOTKEY)),

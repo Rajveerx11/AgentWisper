@@ -113,7 +113,9 @@ def _manifest_terms(workspace: Path) -> set[str]:
         try:
             data = tomllib.loads(pyproject.read_text(encoding="utf-8"))
             project = data.get("project", {})
-            terms.update(_package_name(item) for item in project.get("dependencies", []))
+            terms.update(
+                _package_name(item) for item in project.get("dependencies", [])
+            )
             poetry = data.get("tool", {}).get("poetry", {}).get("dependencies", {})
             terms.update(str(name) for name in poetry if name.lower() != "python")
         except (OSError, tomllib.TOMLDecodeError):

@@ -95,7 +95,6 @@ def encode_wave(samples: np.ndarray, sample_rate: int = SAMPLE_RATE) -> bytes:
     return output.getvalue()
 
 
-
 def record_for(
     seconds: float,
     device: int | str | None = None,

@@ -71,3 +71,4 @@ def test_cloud_transcription_request(monkeypatch) -> None:
     assert result.text == "hello"
     assert captured["request"].full_url.startswith("https://api.groq.com/")
     assert captured["request"].get_header("Authorization") == "Bearer test-key"
+    assert captured["request"].get_header("User-agent") == "AgentWisper/0.4.0"

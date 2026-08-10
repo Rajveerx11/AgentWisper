@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:;"
+    />
+    <title>AgentWisper</title>
+    <!-- AGENTWISPER_STYLES -->
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" role="img">
+              <circle cx="16" cy="16" r="15" fill="currentColor" />
+              <path d="M7 17l5-7 5 12 8-9" fill="none" stroke="white" stroke-width="2" />
+              <g fill="#7da2ff">
+                <circle cx="7" cy="17" r="2" />
+                <circle cx="12" cy="10" r="2" />
+                <circle cx="17" cy="22" r="2" />
+                <circle cx="25" cy="13" r="2" />
+              </g>
+            </svg>
+          </div>
+          <div>
+            <strong>AgentWisper</strong>
+            <span>Technical dictation</span>
+          </div>
+        </div>
+
+        <nav class="nav-stack">
+          <button class="nav-item is-active" data-page="speak" type="button">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3" /></svg>
+            <span>Speak</span>
+          </button>
+          <button class="nav-item" data-page="history" type="button">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M10 6v4l3 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <span>History</span>
+          </button>
+          <button class="nav-item" data-page="settings" type="button">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3l2 2.2 3-.1.3 3 2.2 2-2.2 2 .1 3-3-.1-2.1 2.2-2.1-2.2-3 .1.1-3-2.2-2 2.2-2-.1-3 3 .1L10 3z" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="10" cy="10" r="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+            <span>Settings</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-foot">
+          <span class="local-kicker">LOCAL-FIRST</span>
+          <p>History and keys stay in your Windows profile.</p>
+          <p class="background-note">Closing this window keeps dictation running.</p>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <section class="page is-visible" id="page-speak" aria-labelledby="speak-title">
+          <header class="page-header">
+            <div>
+              <h1 id="speak-title">Dictation workspace</h1>
+              <p>Route speech through your chosen model and into the active cursor.</p>
+            </div>
+            <div class="privacy-state" id="privacy-state">
+              <span class="status-dot"></span>
+              <span>Audio stays on this PC</span>
+            </div>
+          </header>
+
+          <section class="signal-stage" aria-label="Dictation signal path">
+            <div class="signal-meta">
+              <span class="signal-status"><i></i><b id="route-state">Ready</b></span>
+              <span id="route-provider">Local Parakeet</span>
+            </div>
+            <canvas id="signal-canvas" aria-hidden="true"></canvas>
+            <div class="route-labels" aria-hidden="true">
+              <span>Microphone</span>
+              <span id="route-model">Parakeet v3</span>
+              <span>Active cursor</span>
+            </div>
+          </section>
+
+          <div class="command-row">
+            <div class="command-copy" aria-live="polite">
+              <strong id="runtime-title">Ready — hold Right Ctrl</strong>
+              <span id="runtime-detail">Release the key when you finish speaking.</span>
+            </div>
+            <button class="button button-primary" id="dictation-button" type="button">
+              Start dictation
+            </button>
+          </div>
+
+          <section class="transcript-surface" aria-labelledby="latest-title">
+            <header>
+              <div class="surface-title">
+                <h2 id="latest-title">Latest transcript</h2>
+                <span id="word-count"></span>
+              </div>
+              <button class="button button-quiet" id="copy-latest" type="button" disabled>
+                Copy
+              </button>
+            </header>
+            <div class="transcript-body" id="latest-transcript">
+              <p class="placeholder">Your latest transcript will appear here and remain available in local history.</p>
+            </div>
+          </section>
+        </section>
+
+        <section class="page" id="page-history" aria-labelledby="history-title">
+          <header class="page-header">
+            <div>
+              <h1 id="history-title">Transcript history</h1>
+              <p id="history-summary">Stored only on this PC.</p>
+            </div>
+            <button class="button button-danger" id="clear-history" type="button">Clear history</button>
+          </header>
+          <section class="history-surface" id="history-list" aria-live="polite"></section>
+        </section>
+
+        <section class="page" id="page-settings" aria-labelledby="settings-title">
+          <header class="page-header settings-header">
+            <div>
+              <h1 id="settings-title">Settings</h1>
+              <p>Provider, input, and paste behavior. Nothing else.</p>
+            </div>
+          </header>
+
+          <form id="settings-form" novalidate>
+            <section class="settings-section" aria-labelledby="provider-title">
+              <div class="section-heading">
+                <h2 id="provider-title">Transcription provider</h2>
+                <p>Choose where audio is converted into text.</p>
+              </div>
+              <div class="section-content">
+                <div class="provider-switch" role="radiogroup" aria-label="Transcription provider">
+                  <button class="provider-option is-selected" data-provider="local" role="radio" aria-checked="true" type="button">
+                    <strong>Local Parakeet</strong><span>Private · offline</span>
+                  </button>
+                  <button class="provider-option" data-provider="groq" role="radio" aria-checked="false" type="button">
+                    <strong>Groq Cloud</strong><span>Fast cloud transcription</span>
+                  </button>
+                  <button class="provider-option" data-provider="custom" role="radio" aria-checked="false" type="button">
+                    <strong>Custom API</strong><span>OpenAI-compatible</span>
+                  </button>
+                </div>
+
+                <div class="provider-panel" data-provider-panel="local">
+                  <label class="field field-wide">
+                    <span>Parakeet model folder</span>
+                    <input id="local-model-dir" type="text" autocomplete="off" />
+                  </label>
+                  <p class="field-note positive">Audio never leaves this computer.</p>
+                </div>
+
+                <div class="provider-panel is-hidden" data-provider-panel="groq">
+                  <div class="field-grid">
+                    <label class="field">
+                      <span>Groq model</span>
+                      <select id="groq-model"></select>
+                    </label>
+                    <label class="field">
+                      <span>Groq API key</span>
+                      <input id="groq-api-key" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved key" />
+                    </label>
+                  </div>
+                  <p class="field-note warning" id="groq-key-status">Encrypted with Windows DPAPI.</p>
+                </div>
+
+                <div class="provider-panel is-hidden" data-provider-panel="custom">
+                  <div class="field-grid">
+                    <label class="field">
+                      <span>API base URL</span>
+                      <input id="custom-base-url" type="url" autocomplete="off" />
+                    </label>
+                    <label class="field">
+                      <span>Model ID</span>
+                      <input id="custom-model" type="text" autocomplete="off" />
+                    </label>
+                  </div>
+                  <label class="field field-wide">
+                    <span>API key</span>
+                    <input id="custom-api-key" type="password" autocomplete="new-password" placeholder="Leave blank to keep saved key" />
+                  </label>
+                  <p class="field-note" id="custom-key-status">HTTPS required. HTTP allowed only for localhost.</p>
+                </div>
+              </div>
+            </section>
+
+            <section class="settings-section" aria-labelledby="input-title">
+              <div class="section-heading">
+                <h2 id="input-title">Input and paste</h2>
+                <p>Hold the hotkey to talk. Release it to transcribe.</p>
+              </div>
+              <div class="section-content">
+                <div class="field-grid">
+                  <label class="field">
+                    <span>Push-to-talk hotkey</span>
+                    <select id="hotkey"></select>
+                  </label>
+                  <label class="field">
+                    <span>Language code</span>
+                    <input id="language" type="text" maxlength="10" autocomplete="off" />
+                  </label>
+                </div>
+                <label class="field field-wide">
+                  <span>Microphone</span>
+                  <select id="input-device"></select>
+                </label>
+                <p class="field-note warning is-hidden" id="device-error"></p>
+                <div class="check-stack">
+                  <label class="check-row">
+                    <input id="paste-result" type="checkbox" />
+                    <span><b>Paste transcript at the active cursor</b><small>Works when dictation starts from another app.</small></span>
+                  </label>
+                  <label class="check-row">
+                    <input id="restore-clipboard" type="checkbox" />
+                    <span><b>Restore previous clipboard text</b><small>Keeps your clipboard unchanged after automatic paste.</small></span>
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <footer class="settings-footer">
+              <span id="save-status" role="status">Changes stay on this PC.</span>
+              <button class="button button-primary" id="save-settings" type="submit">Save settings</button>
+            </footer>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <!-- AGENTWISPER_SCRIPT -->
+  </body>
+</html>

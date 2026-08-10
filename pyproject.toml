@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-whisper"
-version = "0.3.0"
+version = "0.4.0"
 description = "Private, local technical dictation for coding-agent workflows"
 readme = "README.md"
 license = "MIT"
@@ -13,6 +13,7 @@ dependencies = [
   "numpy>=2.0,<3",
   "pynput>=1.8,<2",
   "pyperclip>=1.11,<2",
+  "pywebview>=6.2.1,<7",
   "sherpa-onnx>=1.13.4,<2",
   "sounddevice>=0.5,<1",
 ]
@@ -21,6 +22,7 @@ dependencies = [
 dev = [
   "pyinstaller>=6.15,<7",
   "pytest>=9,<10",
+  "ruff>=0.12,<1",
 ]
 
 [project.scripts]

@@ -22,7 +22,9 @@ def test_secret_store_uses_dpapi_round_trip(tmp_path: Path) -> None:
     store = SecretStore(tmp_path / "secrets.json")
     store.set("groq_api_key", "test-secret-never-log")
     assert store.get("groq_api_key") == "test-secret-never-log"
-    assert "test-secret-never-log" not in (tmp_path / "secrets.json").read_text(encoding="utf-8")
+    assert "test-secret-never-log" not in (tmp_path / "secrets.json").read_text(
+        encoding="utf-8"
+    )
     store.set("groq_api_key", "")
     assert not store.has("groq_api_key")
 

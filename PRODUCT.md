@@ -22,14 +22,15 @@ Local-first developer dictation with an opinionated technical vocabulary and exp
 
 ## Operating Context
 
-- Invoked globally with a configurable hotkey, currently Right Ctrl by default.
+- Invoked globally with a configurable push-to-talk hotkey, currently Right Ctrl by default.
 - Used while another application has the user's active text cursor.
 - A persistent desktop control exposes availability, listening, processing, success, and failure states.
 - The main app manages transcript history and provider, microphone, hotkey, and paste settings.
 
 ## Capabilities and Constraints
 
-- Windows-native Tkinter application; no Electron runtime or background web server.
+- Windows desktop application using local HTML/CSS in WebView2, plus a tiny native Signal Node; no Electron runtime or background web server.
+- Closing the management window hides it while dictation keeps running; a second launch reopens the existing instance.
 - Local Parakeet v3, Groq, and custom OpenAI-compatible transcription providers.
 - Local SQLite transcript history; audio is discarded after transcription.
 - API keys are protected with Windows DPAPI.

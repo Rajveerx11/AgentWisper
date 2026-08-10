@@ -12,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 
+from agent_whisper import __version__
 from agent_whisper.audio import encode_wave
 from agent_whisper.transcriber import ParakeetTranscriber, Transcription
 
@@ -34,7 +35,9 @@ def validate_base_url(value: str) -> str:
     raw = value.strip().rstrip("/")
     parsed = urllib.parse.urlparse(raw)
     if parsed.username or parsed.password or parsed.query or parsed.fragment:
-        raise ValueError("Provider URL cannot contain credentials, query text, or fragments")
+        raise ValueError(
+            "Provider URL cannot contain credentials, query text, or fragments"
+        )
     if parsed.scheme == "https" and parsed.netloc:
         return raw
     if parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost", "::1"}:
@@ -124,7 +127,7 @@ class CloudTranscriber:
                 "Authorization": f"Bearer {request.api_key}",
                 "Content-Type": f"multipart/form-data; boundary={boundary}",
                 "Accept": "application/json",
-                "User-Agent": "AgentWisper/0.2",
+                "User-Agent": f"AgentWisper/{__version__}",
             },
         )
         started = time.perf_counter()
@@ -143,7 +146,9 @@ class CloudTranscriber:
                 pass
             raise RuntimeError(message) from None
         except urllib.error.URLError as exc:
-            raise RuntimeError(f"Could not reach transcription provider: {exc.reason}") from None
+            raise RuntimeError(
+                f"Could not reach transcription provider: {exc.reason}"
+            ) from None
         elapsed = time.perf_counter() - started
         if len(payload) > MAX_RESPONSE_BYTES:
             raise RuntimeError("Provider response was unexpectedly large")

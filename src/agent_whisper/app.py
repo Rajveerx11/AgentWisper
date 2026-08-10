@@ -58,7 +58,9 @@ class DictationApp:
         self._lock = threading.Lock()
         self._listener: ShortcutListener | None = None
 
-    def process(self, samples, sample_rate: int = 16_000) -> tuple[Transcription, CorrectionResult]:
+    def process(
+        self, samples, sample_rate: int = 16_000
+    ) -> tuple[Transcription, CorrectionResult]:
         transcription = self.transcriber.transcribe(samples, sample_rate)
         correction = self.corrections.correct(transcription.text)
         return transcription, correction
@@ -99,15 +101,11 @@ class DictationApp:
             with self._lock:
                 self._busy = False
 
-    def toggle(self) -> None:
+    def start_recording(self) -> None:
         with self._lock:
             if self.recorder.recording:
-                self._busy = True
-                threading.Thread(target=self._finish_recording, daemon=True).start()
                 return
             if self._busy:
-                print("Still transcribing; hotkey ignored.")
-                _beep(320)
                 return
             try:
                 self.recorder.start()
@@ -117,6 +115,19 @@ class DictationApp:
                 return
         print("Recording...")
         _beep(880)
+
+    def stop_recording(self) -> None:
+        with self._lock:
+            if not self.recorder.recording:
+                return
+            self._busy = True
+        threading.Thread(target=self._finish_recording, daemon=True).start()
+
+    def toggle(self) -> None:
+        if self.recorder.recording:
+            self.stop_recording()
+        else:
+            self.start_recording()
 
     def stop(self) -> None:
         if self.recorder.recording:
@@ -129,12 +140,13 @@ class DictationApp:
         print(f"Technical correction rules: {self.corrections.rule_count}")
         if self.workspace:
             print(f"Repository context: {self.workspace}")
-        print(f"Toggle dictation: {self.config.hotkey}")
+        print(f"Hold to dictate: {self.config.hotkey}")
         print(f"Exit: {self.config.exit_hotkey}")
         print("Audio and text stay on this machine.")
         self._listener = ShortcutListener(
             self.config.hotkey,
-            self.toggle,
+            self.start_recording,
+            self.stop_recording,
             self.config.exit_hotkey,
             self.stop,
         )

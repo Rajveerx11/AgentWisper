@@ -1,7 +1,10 @@
+from pathlib import Path
+
 from PyInstaller.utils.hooks import collect_all
 
 
 datas, binaries, hiddenimports = collect_all("sherpa_onnx")
+datas += [(str(Path("src/agent_whisper/web")), "agent_whisper/web")]
 
 analysis = Analysis(
     ["src/agent_whisper/gui.py"],
@@ -12,7 +15,7 @@ analysis = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=["PyQt5", "PyQt6", "PySide2", "PySide6", "cefpython3", "gi"],
     noarchive=False,
     optimize=1,
 )

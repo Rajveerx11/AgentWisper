@@ -36,5 +36,7 @@ def test_history_round_trip_and_clear(tmp_path: Path) -> None:
     assert len(items) == 1
     assert items[0].text == "Supabase"
     assert items[0].raw_text == "Superbase"
+    assert store.count() == 1
     store.clear()
     assert store.list() == []
+    assert store.count() == 0

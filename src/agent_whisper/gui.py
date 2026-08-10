@@ -15,6 +15,11 @@ from agent_whisper.windows_runtime import SingleInstance
 
 logger = logging.getLogger(__name__)
 
+LOADING_INTERFACE = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{height:100%;margin:0}body{display:grid;place-items:center;background:#f3f5f7;color:#263548;font:14px 'Segoe UI',sans-serif}.boot{display:grid;gap:8px;text-align:center}.boot b{color:#111c2e;font-size:18px}.boot i{width:8px;height:8px;margin:auto;border-radius:50%;background:#2f67e8;box-shadow:0 0 0 6px #e8efff}</style>
+</head><body><div class="boot"><i></i><b>AgentWisper</b><span>Loading local workspace…</span></div></body></html>"""
+
 
 def _load_interface() -> str:
     assets = files("agent_whisper").joinpath("web")
@@ -67,6 +72,15 @@ class DesktopApi:
     def copy_text(self, text: str) -> bool:
         return self._controller.copy_text(text)
 
+    def begin_hotkey_capture(self) -> bool:
+        return self._controller.begin_hotkey_capture()
+
+    def end_hotkey_capture(self) -> bool:
+        return self._controller.end_hotkey_capture()
+
+    def preview_hotkey(self, value: str) -> dict[str, str]:
+        return self._controller.preview_hotkey(value)
+
     def hide_window(self) -> bool:
         if self._window:
             self._window.hide()
@@ -97,9 +111,10 @@ def main() -> None:
     controller = DesktopController()
     controller.start()
     api = DesktopApi(controller)
+    interface = _load_interface()
     window = webview.create_window(
         "AgentWisper",
-        html=_load_interface(),
+        html=LOADING_INTERFACE,
         js_api=api,
         width=1000,
         height=640,
@@ -127,6 +142,10 @@ def main() -> None:
     api.attach(window, overlay)
 
     def background_window() -> bool:
+        try:
+            controller.end_hotkey_capture()
+        except Exception:
+            logger.exception("Could not restore the hotkey listener before hiding")
         window.hide()
         overlay.notice("Hold the hotkey whenever you want to dictate")
         return False
@@ -151,13 +170,20 @@ def main() -> None:
     )
     watcher.start()
 
+    def load_desktop_interface() -> None:
+        if not window.events.loaded.wait(15):
+            logger.error("Initial WebView page did not finish loading")
+            return
+        window.load_html(interface)
+
     try:
         webview.start(
+            load_desktop_interface,
             gui="edgechromium",
             debug=False,
             http_server=False,
             private_mode=True,
-            user_agent="AgentWisper/0.4.0",
+            user_agent="AgentWisper/0.5.0",
         )
     finally:
         stop_instance_watcher.set()

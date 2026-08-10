@@ -734,6 +734,50 @@ select:focus-visible {
   border-color: var(--accent);
 }
 
+.hotkey-recorder {
+  display: flex;
+  width: 100%;
+  min-height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 11px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: var(--paper);
+  text-align: left;
+  cursor: pointer;
+}
+
+.hotkey-recorder:hover {
+  border-color: #8c9dad;
+  background: #fbfcfd;
+}
+
+.hotkey-recorder strong {
+  color: var(--ink);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.hotkey-recorder small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.hotkey-recorder.is-capturing {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: var(--shadow-focus);
+}
+
+.hotkey-recorder.is-capturing strong,
+.hotkey-recorder.is-capturing small {
+  color: var(--accent);
+}
+
 .field-note {
   margin: 8px 0 0;
   color: var(--muted);

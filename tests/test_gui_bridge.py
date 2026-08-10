@@ -17,3 +17,4 @@ def test_local_interface_assets_are_inlined() -> None:
     assert "AGENTWISPER_SCRIPT" not in interface
     assert "Content-Security-Policy" in interface
     assert "Dictation workspace" in interface
+    assert 'id="hotkey-recorder"' in interface

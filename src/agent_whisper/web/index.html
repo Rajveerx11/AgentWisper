@@ -193,10 +193,14 @@
               </div>
               <div class="section-content">
                 <div class="field-grid">
-                  <label class="field">
+                  <div class="field">
                     <span>Push-to-talk hotkey</span>
-                    <select id="hotkey"></select>
-                  </label>
+                    <input id="hotkey" type="hidden" />
+                    <button class="hotkey-recorder" id="hotkey-recorder" type="button">
+                      <strong id="hotkey-display">Right Ctrl</strong>
+                      <small id="hotkey-instruction">Click, then press any keyboard key</small>
+                    </button>
+                  </div>
                   <label class="field">
                     <span>Language code</span>
                     <input id="language" type="text" maxlength="10" autocomplete="off" />

@@ -7,7 +7,7 @@ AgentWisper records from a global hotkey, shows a compact live waveform, transcr
 ## What is included
 
 - Lightweight HTML/CSS Windows desktop interface powered by WebView2
-- Right Ctrl push-to-talk hotkey, changeable in Settings
+- Right Ctrl push-to-talk default, plus capture for any single keyboard key
 - Persistent bottom-right Signal Node with idle, listening, processing, success, and error states
 - Local Parakeet TDT 0.6B v3 transcription
 - Groq Cloud using `whisper-large-v3-turbo` or `whisper-large-v3`
@@ -33,7 +33,7 @@ Stores corrected and raw transcripts locally in `%APPDATA%\AgentWisper\history.d
 
 Select Local, Groq, or a custom OpenAI-compatible provider. Configure the hotkey, microphone, language, model, and paste behavior.
 
-Right Ctrl is the default. The editable hotkey dropdown also offers Left Ctrl, F8, and two Ctrl combinations.
+Right Ctrl is the default. In Settings, click the hotkey control and press any single keyboard key to capture it. Dedicated function or media keys are recommended; ordinary letter keys will also trigger while typing.
 
 ## Tech stack
 

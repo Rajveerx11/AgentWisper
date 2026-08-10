@@ -22,7 +22,7 @@ Local-first developer dictation with an opinionated technical vocabulary and exp
 
 ## Operating Context
 
-- Invoked globally with a configurable push-to-talk hotkey, currently Right Ctrl by default.
+- Invoked globally with a configurable push-to-talk hotkey, currently Right Ctrl by default; Settings can capture any single physical keyboard key.
 - Used while another application has the user's active text cursor.
 - A persistent desktop control exposes availability, listening, processing, success, and failure states.
 - The main app manages transcript history and provider, microphone, hotkey, and paste settings.
@@ -32,7 +32,7 @@ Local-first developer dictation with an opinionated technical vocabulary and exp
 - Windows desktop application using local HTML/CSS in WebView2, plus a tiny native Signal Node; no Electron runtime or background web server.
 - Closing the management window hides it while dictation keeps running; a second launch reopens the existing instance.
 - Local Parakeet v3, Groq, and custom OpenAI-compatible transcription providers.
-- Local SQLite transcript history; audio is discarded after transcription.
+- Local SQLite transcript history using WAL durability; audio is discarded after transcription.
 - API keys are protected with Windows DPAPI.
 - Must stay lightweight and avoid speculative features.
 - The floating voice surface may learn from ambient dictation products but must not copy Wispr Flow's centered bar.

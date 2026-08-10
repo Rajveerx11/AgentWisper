@@ -196,10 +196,14 @@ class HistoryStore:
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.path, timeout=5)
         connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA busy_timeout = 5000")
+        connection.execute("PRAGMA foreign_keys = ON")
         return connection
 
     def _initialize(self) -> None:
         with self._connect() as connection:
+            connection.execute("PRAGMA journal_mode = WAL")
+            connection.execute("PRAGMA synchronous = NORMAL")
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS transcripts (
@@ -258,6 +262,11 @@ class HistoryStore:
                 (safe_limit,),
             ).fetchall()
         return [HistoryItem(**dict(row)) for row in rows]
+
+    def count(self) -> int:
+        with self._lock, self._connect() as connection:
+            row = connection.execute("SELECT COUNT(*) FROM transcripts").fetchone()
+        return int(row[0])
 
     def clear(self) -> None:
         with self._lock, self._connect() as connection:

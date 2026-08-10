@@ -28,6 +28,25 @@ def test_empty_hotkey_is_rejected() -> None:
         normalize_hotkey("  ")
 
 
+@pytest.mark.parametrize(
+    ("value", "label"),
+    [
+        ("code:KeyQ", "Q"),
+        ("code:F12", "F12"),
+        ("code:Semicolon", ";"),
+        ("code:MediaPlayPause", "Play/Pause"),
+    ],
+)
+def test_captured_physical_keys_are_normalized(value: str, label: str) -> None:
+    assert normalize_hotkey(value) == value
+    assert hotkey_label(value) == label
+
+
+def test_unknown_captured_key_is_rejected() -> None:
+    with pytest.raises(ValueError, match="not supported"):
+        normalize_hotkey("code:MadeUpKey")
+
+
 def test_right_ctrl_is_push_to_talk_and_ignores_repeat() -> None:
     events: list[str] = []
     listener = ShortcutListener(
@@ -53,4 +72,21 @@ def test_stopping_listener_releases_active_push_to_talk() -> None:
     )
     listener._on_press(keyboard.Key.ctrl_r)
     listener.stop()
+    assert events == ["down", "up"]
+
+
+def test_captured_letter_key_is_push_to_talk_and_ignores_repeat() -> None:
+    events: list[str] = []
+    listener = ShortcutListener(
+        "code:KeyQ",
+        lambda: events.append("down"),
+        lambda: events.append("up"),
+    )
+    key = keyboard.KeyCode.from_vk(81)
+
+    listener._on_press(key)
+    listener._on_press(key)
+    listener._on_release(key)
+    listener._on_release(key)
+
     assert events == ["down", "up"]

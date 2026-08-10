@@ -27,6 +27,9 @@
     polling: false,
     latestRendered: null,
     lastVersion: -1,
+    lastHistoryRevision: -1,
+    hotkeyCapturing: false,
+    hotkeyCaptureTimer: null,
     clearArmed: false,
     toastTimer: null,
     phase: 0,
@@ -138,10 +141,11 @@
     wordCount.textContent = runtime.word_count ? `${runtime.word_count} words` : "";
     copyLatest.disabled = !runtime.latest_text;
 
-    if (runtime.version !== ui.lastVersion) {
-      const previousVersion = ui.lastVersion;
-      ui.lastVersion = runtime.version;
-      if (ui.page === "history" && previousVersion >= 0) refreshHistory();
+    ui.lastVersion = runtime.version;
+    if (runtime.history_revision !== ui.lastHistoryRevision) {
+      const previousRevision = ui.lastHistoryRevision;
+      ui.lastHistoryRevision = runtime.history_revision;
+      if (ui.page === "history" && previousRevision >= 0) refreshHistory();
     }
   }
 
@@ -181,7 +185,8 @@
     );
     $("#custom-base-url").value = settings.custom_base_url || "";
     $("#custom-model").value = settings.custom_model || "";
-    fillSelect($("#hotkey"), bootstrap.hotkeys, settings.hotkey);
+    $("#hotkey").value = settings.hotkey;
+    $("#hotkey-display").textContent = settings.hotkey_label;
     fillSelect($("#input-device"), bootstrap.devices, settings.input_device ?? "");
     $("#language").value = settings.language || "en";
     $("#paste-result").checked = Boolean(settings.paste_result);
@@ -195,6 +200,42 @@
     const deviceError = $("#device-error");
     deviceError.textContent = bootstrap.device_error || "";
     deviceError.classList.toggle("is-hidden", !bootstrap.device_error);
+  }
+
+  async function finishHotkeyCapture(message = "Click, then press any keyboard key") {
+    clearTimeout(ui.hotkeyCaptureTimer);
+    ui.hotkeyCaptureTimer = null;
+    const recorder = $("#hotkey-recorder");
+    recorder.classList.remove("is-capturing");
+    recorder.setAttribute("aria-pressed", "false");
+    $("#hotkey-instruction").textContent = message;
+    if (!ui.hotkeyCapturing) return;
+    ui.hotkeyCapturing = false;
+    try {
+      await window.pywebview.api.end_hotkey_capture();
+    } catch (error) {
+      showToast(error.message || String(error));
+    }
+  }
+
+  async function beginHotkeyCapture() {
+    if (ui.hotkeyCapturing) return;
+    try {
+      await window.pywebview.api.begin_hotkey_capture();
+      ui.hotkeyCapturing = true;
+      const recorder = $("#hotkey-recorder");
+      recorder.classList.add("is-capturing");
+      recorder.setAttribute("aria-pressed", "true");
+      $("#hotkey-display").textContent = "Press a key…";
+      $("#hotkey-instruction").textContent = "Any single keyboard key works";
+      recorder.focus();
+      ui.hotkeyCaptureTimer = setTimeout(() => {
+        $("#hotkey-display").textContent = ui.settings.hotkey_label;
+        finishHotkeyCapture("Capture timed out — click to try again");
+      }, 8000);
+    } catch (error) {
+      showToast(error.message || String(error));
+    }
   }
 
   function settingsPayload() {
@@ -518,6 +559,26 @@
     });
   });
 
+  $("#hotkey-recorder").addEventListener("click", beginHotkeyCapture);
+  $("#hotkey-recorder").addEventListener("keydown", async (event) => {
+    if (!ui.hotkeyCapturing || event.repeat) return;
+    event.preventDefault();
+    event.stopPropagation();
+    try {
+      if (!event.code) throw new Error("That key could not be identified");
+      const captured = await window.pywebview.api.preview_hotkey(`code:${event.code}`);
+      $("#hotkey").value = captured.value;
+      $("#hotkey-display").textContent = captured.label;
+      ui.settings.hotkey = captured.value;
+      ui.settings.hotkey_label = captured.label;
+      await finishHotkeyCapture("Captured — save settings to apply");
+    } catch (error) {
+      $("#hotkey-display").textContent = ui.settings.hotkey_label;
+      await finishHotkeyCapture("Click, then press another key");
+      showToast(error.message || String(error));
+    }
+  });
+
   dictationButton.addEventListener("click", async () => {
     dictationButton.disabled = true;
     try {
@@ -567,6 +628,8 @@
     try {
       const settings = await window.pywebview.api.save_settings(settingsPayload());
       ui.settings = settings;
+      $("#hotkey").value = settings.hotkey;
+      $("#hotkey-display").textContent = settings.hotkey_label;
       $("#groq-api-key").value = "";
       $("#custom-api-key").value = "";
       $("#groq-key-status").textContent = settings.groq_key_saved

@@ -54,17 +54,20 @@ class DesktopController:
         self.hotkey_listener: ShortcutListener | None = None
 
         latest = self.history_store.list(limit=1)
+        self.history_count = self.history_store.count()
         self.state = "idle"
         self.detail = ""
         self.latest_text = latest[0].text if latest else ""
         self.pasted: bool | None = None
         self.version = 1
+        self.history_revision = 1
         self._paste_target_hwnd: int | None = None
         self._recording_started_at = 0.0
         self._recording_timer: threading.Timer | None = None
         self._settle_timer: threading.Timer | None = None
         self._lock = threading.RLock()
         self._shutdown = False
+        self._hotkey_capture_active = False
 
     def start(self) -> None:
         listener = self._make_hotkey_listener(self.settings.hotkey)
@@ -259,6 +262,8 @@ class DesktopController:
 
             with self._lock:
                 self.latest_text = correction.text
+                self.history_count += 1
+                self.history_revision += 1
                 self._paste_target_hwnd = None
             if paste_failed:
                 self._set_state(
@@ -309,6 +314,8 @@ class DesktopController:
             )
             return {
                 "version": self.version,
+                "history_revision": self.history_revision,
+                "history_count": self.history_count,
                 "state": self.state,
                 "detail": self.detail,
                 "pasted": self.pasted,
@@ -333,6 +340,7 @@ class DesktopController:
             payload = asdict(self.settings)
         payload.update(
             {
+                "hotkey_label": hotkey_label(payload["hotkey"]),
                 "groq_key_saved": self.secret_store.has("groq_api_key"),
                 "custom_key_saved": self.secret_store.has("custom_api_key"),
             }
@@ -361,6 +369,43 @@ class DesktopController:
             ],
             "groq_models": list(GROQ_MODELS),
         }
+
+    def begin_hotkey_capture(self) -> bool:
+        with self._lock:
+            if self.state in {"listening", "transcribing"}:
+                raise ValueError(
+                    "Finish the current dictation before changing the hotkey"
+                )
+            if self._hotkey_capture_active:
+                return True
+            self._hotkey_capture_active = True
+            listener = self.hotkey_listener
+            self.hotkey_listener = None
+        if listener:
+            listener.stop()
+        return True
+
+    def end_hotkey_capture(self) -> bool:
+        with self._lock:
+            if not self._hotkey_capture_active:
+                return True
+            self._hotkey_capture_active = False
+            if self._shutdown or self.hotkey_listener is not None:
+                return True
+            hotkey = self.settings.hotkey
+        listener = self._make_hotkey_listener(hotkey)
+        listener.start()
+        with self._lock:
+            if self._shutdown:
+                listener.stop()
+            else:
+                self.hotkey_listener = listener
+        return True
+
+    @staticmethod
+    def preview_hotkey(value: str) -> dict[str, str]:
+        hotkey = normalize_hotkey(value)
+        return {"value": hotkey, "label": hotkey_label(hotkey)}
 
     def save_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
         with self._lock:
@@ -432,6 +477,7 @@ class DesktopController:
         with self._lock:
             old_listener = self.hotkey_listener
             self.hotkey_listener = new_listener
+            self._hotkey_capture_active = False
             self.settings = settings
             self.recorder = AudioRecorder(
                 settings.input_device,
@@ -446,6 +492,8 @@ class DesktopController:
         self.history_store.clear()
         with self._lock:
             self.latest_text = ""
+            self.history_count = 0
+            self.history_revision += 1
             self.version += 1
 
     def copy_latest(self) -> bool:
@@ -468,6 +516,7 @@ class DesktopController:
             if self._shutdown:
                 return
             self._shutdown = True
+            self._hotkey_capture_active = False
             self._cancel_timer("_recording_timer")
             self._cancel_timer("_settle_timer")
             listener = self.hotkey_listener

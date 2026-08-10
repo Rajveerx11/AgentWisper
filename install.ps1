@@ -27,14 +27,35 @@ if (-not (Test-Path -LiteralPath $sourceExecutable -PathType Leaf)) {
 }
 
 $runningProcesses = Get-CimInstance Win32_Process -Filter "Name = 'AgentWisper.exe'" -ErrorAction SilentlyContinue
+$installedProcessIds = @()
 foreach ($process in $runningProcesses) {
     if ($process.ExecutablePath -and $process.ExecutablePath.StartsWith($installDirectory, [System.StringComparison]::OrdinalIgnoreCase)) {
-        Stop-Process -Id $process.ProcessId -Force
+        $installedProcessIds += $process.ProcessId
     }
+}
+if ($installedProcessIds.Count -gt 0) {
+    Stop-Process -Id $installedProcessIds -Force -ErrorAction SilentlyContinue
+    Wait-Process -Id $installedProcessIds -Timeout 8 -ErrorAction SilentlyContinue
 }
 
 if (Test-Path -LiteralPath $installDirectory) {
-    Remove-Item -LiteralPath $installDirectory -Recurse -Force
+    $removed = $false
+    foreach ($attempt in 1..6) {
+        try {
+            Remove-Item -LiteralPath $installDirectory -Recurse -Force
+            $removed = $true
+            break
+        }
+        catch {
+            if ($attempt -eq 6) {
+                throw
+            }
+            Start-Sleep -Milliseconds 400
+        }
+    }
+    if (-not $removed) {
+        throw "Could not replace the existing AgentWisper installation."
+    }
 }
 New-Item -ItemType Directory -Path $installDirectory -Force | Out-Null
 Get-ChildItem -LiteralPath $sourceDirectory | Copy-Item -Destination $installDirectory -Recurse -Force
@@ -53,7 +74,7 @@ $estimatedSize = [int]((Get-ChildItem -LiteralPath $installDirectory -Recurse -F
 $uninstallCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$installDirectory\uninstall.ps1`""
 $registryValues = @{
     DisplayName = $appName
-    DisplayVersion = '0.4.0'
+    DisplayVersion = '0.5.0'
     Publisher = 'Rajveer Vadnal'
     DisplayIcon = "$installedExecutable,0"
     InstallLocation = $installDirectory

@@ -1,0 +1,81 @@
+name: Bug report
+description: Report a reproducible AgentWisper problem.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug. Remove API keys, transcripts, private repository names, and personal paths before submitting.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: This report contains no secrets or private transcript/repository data.
+          required: true
+        - label: This is not a private security report.
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: AgentWisper version
+      placeholder: "0.6.0 or commit SHA"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      options:
+        - Local Parakeet
+        - Groq
+        - Custom API
+        - Not provider-specific
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: "Windows 11 24H2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Use sanitized sample text and exact actions.
+      placeholder: |
+        1. Open ...
+        2. Hold ...
+        3. Release ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Add screenshots or logs only after removing private data.
+

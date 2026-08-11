@@ -1,157 +1,220 @@
 # AgentWisper
 
-Minimal, local-first voice dictation for developers using coding agents.
+[![CI](https://github.com/Rajveerx11/AgentWisper/actions/workflows/test.yml/badge.svg)](https://github.com/Rajveerx11/AgentWisper/actions/workflows/test.yml)
+[![Latest release](https://img.shields.io/github/v/release/Rajveerx11/AgentWisper?display_name=tag&sort=semver)](https://github.com/Rajveerx11/AgentWisper/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-2f67e8.svg)](LICENSE)
+[![Platform: Windows](https://img.shields.io/badge/platform-Windows-0078d4.svg)](#requirements)
 
-AgentWisper records from a global hotkey, shows a compact live waveform, transcribes through local Parakeet or a selected cloud provider, fixes common technical terms, pastes at the active cursor, and keeps searchable history on the PC.
+Local-first voice dictation for developers, AI engineers, and people who speak
+in APIs, package names, infrastructure terms, and project-specific identifiers.
 
-## What is included
+AgentWisper runs as a lightweight Windows desktop app. Hold a global hotkey,
+speak, release, and receive corrected text at the active cursor. Use local
+Parakeet inference, Groq, or a custom OpenAI-compatible transcription provider.
 
-- Lightweight HTML/CSS Windows desktop interface powered by WebView2
-- Right Ctrl push-to-talk default, plus capture for any single keyboard key
-- Persistent bottom-right Signal Node with idle, listening, processing, success, and error states
-- Local Parakeet TDT 0.6B v3 transcription
-- Background model preloading for fast first dictation
-- Project-aware technical spelling from one local repository
-- Learned corrections taught directly from transcript history
-- Groq Cloud using `whisper-large-v3-turbo` or `whisper-large-v3`
-- Custom OpenAI-compatible transcription endpoint
-- Windows DPAPI-encrypted API keys
+> **Project status:** AgentWisper is an early-stage open-source project. Core
+> dictation works, but interfaces and storage formats may still evolve before
+> version 1.0.
+
+## Why AgentWisper
+
+General dictation often turns names such as `Supabase`, `pgvector`, `kubectl`,
+or an internal service identifier into ordinary words. AgentWisper adds a local
+technical correction layer after transcription:
+
+- select one optional repository to learn dependency and filename spellings;
+- teach corrections directly from transcript history;
+- keep project terms and learned mappings on the PC;
+- remove any learned mapping from Settings.
+
+Repository content is never executed, edited, or inserted into cloud prompts.
+
+## Highlights
+
+- Native Windows desktop lifecycle with Start Menu and Installed Apps entries
+- Right Ctrl push-to-talk by default; any single key can be captured in Settings
+- Persistent, always-on-top Signal Node for recording and processing state
+- Local Parakeet TDT 0.6B v3 inference with background model preloading
+- Groq and custom OpenAI-compatible transcription providers
+- Project-aware and user-taught developer vocabulary
 - Local SQLite transcript history
-- Technical vocabulary correction
 - Automatic cursor paste with clipboard restoration
+- Windows DPAPI encryption for cloud API keys
+- Local HTML, CSS, and JavaScript interface in WebView2; no Electron runtime
+- No account, analytics, saved audio, online database, or background web server
 
-No account, analytics, online database, Electron runtime, saved recordings, or background web server.
+## How it works
 
-## Screens
-
-### Speak
-
-Shows the selected provider, one recording control, current state, and latest transcript.
-
-### History
-
-Stores corrected and raw transcripts locally in `%APPDATA%\AgentWisper\history.db`.
-
-### Settings
-
-Select Local, Groq, or a custom OpenAI-compatible provider. Configure the hotkey, microphone, language, model, project vocabulary, and paste behavior.
-
-### Developer vocabulary
-
-Select an optional local repository in Settings. AgentWisper scans up to 2,000 files, skips dependency and build folders, and learns exact dependency and identifier spellings without uploading or editing repository content.
-
-Use **Teach correction** beside any history item to save a heard phrase and its exact spelling. Learned pairs are stored in `%APPDATA%\AgentWisper\vocabulary.json`, apply after local or cloud transcription, and can be removed individually in Settings.
-
-Right Ctrl is the default. In Settings, click the hotkey control and press any single keyboard key to capture it. Dedicated function or media keys are recommended; ordinary letter keys will also trigger while typing.
-
-## Tech stack
-
-- Python 3.11
-- Local HTML, CSS, and JavaScript inside the Windows WebView2 runtime
-- A small native Python Signal Node for the always-on-top voice surface
-- sherpa-onnx and local Parakeet
-- sounddevice microphone capture
-- SQLite from the Python standard library
-- Windows DPAPI through `ctypes`
-- Standard-library HTTPS client for cloud transcription
-
-## Quick start
-
-### Install as a Windows desktop app
-
-```powershell
-.\build.ps1
-.\install.ps1
+```mermaid
+flowchart LR
+    H["Global hotkey"] --> A["In-memory audio"]
+    A --> P{"Selected provider"}
+    P -->|Local| L["Parakeet on device"]
+    P -->|Cloud| C["Groq or compatible API"]
+    L --> V["Local vocabulary correction"]
+    C --> V
+    V --> S["Local history"]
+    V --> T["Active cursor"]
 ```
 
-This installs AgentWisper for the current user, registers it in Windows Installed Apps, and creates a Start Menu entry searchable as `AgentWisper`. Application files go to `%LOCALAPPDATA%\Programs\AgentWisper`; private settings and history remain in `%APPDATA%\AgentWisper`.
+See [Architecture](docs/ARCHITECTURE.md) for component and privacy boundaries.
 
-The main window is a light signal-routing workspace. Hold the configured hotkey to record and release it to transcribe. The always-on-top Signal Node stays at the bottom-right of the desktop; click it for mouse control or right-click it to reopen the main window.
+## Requirements
 
-Closing the main window hides it instead of stopping AgentWisper. The Signal Node and global hotkey keep running in the background. Launching AgentWisper again reopens the existing window instead of starting a duplicate process. To stop it completely, end `AgentWisper.exe` in Task Manager or uninstall it.
+- Windows 10 or Windows 11, x64
+- WebView2 Runtime
+- Microphone access
+- Python 3.11 and [uv](https://docs.astral.sh/uv/) for source development
+- A compatible Parakeet model directory for local transcription, or a cloud
+  provider API key
 
-To remove the application while keeping its settings and transcript history:
+The local model is intentionally not bundled. AgentWisper looks for
+`parakeet-tdt-0.6b-v3-int8` in these locations:
+
+```text
+%APPDATA%\orca\speech-models\
+%APPDATA%\com.pais.handy\models\
+%APPDATA%\October\voice-models\
+```
+
+The selected folder must contain:
+
+```text
+encoder.int8.onnx
+decoder.int8.onnx
+joiner.int8.onnx
+tokens.txt
+```
+
+## Install
+
+### Build and install for the current Windows user
+
+```powershell
+uv venv .venv --python 3.11
+uv sync --extra dev
+.\build.ps1
+.\install.ps1 -Launch
+```
+
+This installs AgentWisper to
+`%LOCALAPPDATA%\Programs\AgentWisper`, creates a Start Menu shortcut, and
+registers an uninstaller. Private data remains under
+`%APPDATA%\AgentWisper`.
+
+### Run from source
+
+```powershell
+uv sync --extra dev
+.\run-app.ps1
+```
+
+### Uninstall
 
 ```powershell
 & "$env:LOCALAPPDATA\Programs\AgentWisper\uninstall.ps1"
 ```
 
-### Run from source
+Uninstalling keeps settings, vocabulary, and transcript history. Remove
+`%APPDATA%\AgentWisper` manually only when that data is no longer needed.
 
-```powershell
-uv venv .venv --python 3.11
-uv pip install --python .venv\Scripts\python.exe -e ".[dev]"
-.\run-app.ps1
-```
+## Usage
 
-The local model is auto-detected at:
+1. Launch AgentWisper from the Start Menu.
+2. Open **Settings** and choose Local Parakeet, Groq, or Custom API.
+3. Confirm the microphone and hotkey.
+4. Optional: choose a local project folder for exact technical spellings.
+5. Hold the hotkey, speak, and release it to transcribe.
+6. Use **Teach correction** in History when a technical term is wrong.
+
+Closing the main window hides it. The global hotkey and Signal Node continue
+running until `AgentWisper.exe` is ended or the app is uninstalled.
+
+## Providers and privacy
+
+| Provider | Audio destination | API key storage | Vocabulary behavior |
+| --- | --- | --- | --- |
+| Local Parakeet | Stays in memory on the PC | Not required | Applied locally |
+| Groq | Sent to Groq when selected | DPAPI-encrypted | Applied locally after transcription |
+| Custom API | Sent to the configured HTTPS endpoint | DPAPI-encrypted | Applied locally after transcription |
+
+Plain HTTP custom endpoints are accepted only for `localhost`. Project terms,
+learned mappings, clipboard content, and history are not added to cloud
+requests.
+
+Local files:
 
 ```text
-%APPDATA%\orca\speech-models\parakeet-tdt-0.6b-v3-int8
+%APPDATA%\AgentWisper\settings.json
+%APPDATA%\AgentWisper\secrets.json
+%APPDATA%\AgentWisper\vocabulary.json
+%APPDATA%\AgentWisper\history.db
 ```
 
-AgentWisper reads the model without copying or modifying it. A different compatible model folder can be selected in Settings.
+Audio is discarded after transcription. See [Security Policy](SECURITY.md) for
+the supported reporting process and security boundaries.
 
-## Providers
+## Developer vocabulary limits
 
-### Local Parakeet
+Repository scanning is intentionally bounded:
 
-Audio stays in memory and is processed on-device. Nothing is uploaded.
+- maximum 2,000 inspected files;
+- dependency, build, cache, and VCS directories skipped;
+- maximum 1 MB read from each supported manifest;
+- maximum 2,000 manifest dependency entries;
+- maximum 500 project terms;
+- maximum 500 learned heard-to-spelling mappings.
 
-### Groq
+These limits keep startup and post-transcription correction predictable.
 
-AgentWisper calls Groq's OpenAI-compatible audio transcription endpoint. Enter a Groq API key in Settings; it is encrypted for the current Windows user with DPAPI. Selecting Groq means recorded audio is sent to Groq. See [Groq Speech-to-Text documentation](https://console.groq.com/docs/speech-to-text).
-
-### Custom compatible provider
-
-Enter an API base URL, model ID, and key. HTTPS is required. Plain HTTP is accepted only for `localhost`, allowing local tools such as LM Studio-compatible gateways.
-
-## Privacy and security
-
-- Audio is held in memory and discarded after transcription.
-- History remains in the Windows user profile.
-- API keys are never written as plaintext.
-- API keys are never logged or included in transcript history.
-- Cloud calls happen only when a cloud provider is selected.
-- Provider URLs cannot contain embedded credentials, query strings, or fragments.
-- Existing clipboard text is restored after paste when enabled.
-- `.env`, credentials, build output, and local configuration are excluded from Git.
-
-DPAPI protects secrets from repository leakage and offline copying into another Windows account. It cannot protect against malware already running as the same Windows user.
-
-## Test
+## Development
 
 ```powershell
-.venv\Scripts\python.exe -m pytest
-```
-
-## Build Windows app
-
-```powershell
+uv sync --locked --extra dev
+uv run ruff check src tests
+uv run ruff format --check src tests
+uv run pytest
+node --check src\agent_whisper\web\app.js
+uv build
 .\build.ps1
 ```
 
-Output:
+The Windows package is written to
+`dist\AgentWisper\AgentWisper.exe`. The package includes AgentWisper's license,
+notices, and collected runtime dependency license files; it does not include
+the speech model.
+
+### Project layout
 
 ```text
-dist\AgentWisper\AgentWisper.exe
-```
-
-The ONNX model is intentionally external and is not bundled into the executable directory.
-
-## Project layout
-
-```text
-src/agent_whisper/gui.py          WebView2 desktop host and lifecycle
+src/agent_whisper/gui.py          WebView2 host and desktop lifecycle
 src/agent_whisper/desktop.py      Recording and transcription controller
-src/agent_whisper/overlay.py      Native always-on-top Signal Node
+src/agent_whisper/overlay.py      Always-on-top Signal Node
 src/agent_whisper/web/            Local HTML, CSS, and JavaScript interface
-src/agent_whisper/providers.py    Local, Groq, and compatible providers
-src/agent_whisper/storage.py      Settings, encrypted secrets, SQLite history
-src/agent_whisper/audio.py        Microphone and WAV handling
-src/agent_whisper/vocabulary.py   Technical correction rules
+src/agent_whisper/providers.py    Local and cloud transcription providers
+src/agent_whisper/storage.py      Settings, encrypted secrets, and history
+src/agent_whisper/vocabulary.py   Project and learned correction engine
+tests/                             Automated behavior and regression tests
+.github/workflows/                CI and release automation
 ```
+
+## Releases
+
+CI runs on pull requests and `main`. Version tags matching `v*.*.*` trigger the
+Windows release workflow, which verifies the tag against the package version,
+builds the app, publishes a ZIP and SHA-256 checksum, and creates a GitHub
+Release.
+
+Release history is maintained in [CHANGELOG.md](CHANGELOG.md).
+
+## Contributing
+
+Bug reports, focused features, documentation, and tests are welcome. Read
+[CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Participation
+is governed by the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
-MIT
+AgentWisper is licensed under the [MIT License](LICENSE). Third-party runtime
+components remain under their respective licenses; see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -50,10 +50,10 @@ def test_controller_teaches_and_forgets_local_correction(monkeypatch, tmp_path) 
     controller = DesktopController()
 
     vocabulary = controller.teach_correction("my service", "MyService")
-    assert vocabulary["learned"] == [
-        {"canonical": "MyService", "alias": "my service"}
-    ]
-    assert controller.corrections.correct("Restart my service").text == "Restart MyService"
+    assert vocabulary["learned"] == [{"canonical": "MyService", "alias": "my service"}]
+    assert (
+        controller.corrections.correct("Restart my service").text == "Restart MyService"
+    )
 
     controller.forget_correction("my service", "MyService")
     assert controller.corrections.correct("Restart my service").text == (

@@ -249,7 +249,9 @@ class VocabularyStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         records = [
             {"canonical": canonical, "aliases": aliases}
-            for canonical, aliases in sorted(terms.items(), key=lambda item: item[0].casefold())
+            for canonical, aliases in sorted(
+                terms.items(), key=lambda item: item[0].casefold()
+            )
         ]
         temporary = self.path.with_suffix(".tmp")
         temporary.write_text(

@@ -7,6 +7,7 @@ import threading
 from importlib.resources import files
 from typing import Any
 
+from agent_whisper import __version__
 from agent_whisper.desktop import DesktopController
 from agent_whisper.overlay import OverlayProcess
 from agent_whisper.windows_runtime import SingleInstance
@@ -216,7 +217,7 @@ def main() -> None:
             debug=False,
             http_server=False,
             private_mode=True,
-            user_agent="AgentWisper/0.6.0",
+            user_agent=f"AgentWisper/{__version__}",
         )
     finally:
         stop_instance_watcher.set()

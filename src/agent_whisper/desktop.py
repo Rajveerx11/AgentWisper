@@ -425,7 +425,9 @@ class DesktopController:
     def teach_correction(self, alias: str, canonical: str) -> dict[str, Any]:
         with self._lock:
             if self.state in {"listening", "transcribing"}:
-                raise ValueError("Finish the current dictation before teaching a correction")
+                raise ValueError(
+                    "Finish the current dictation before teaching a correction"
+                )
         terms = self.vocabulary_store.add(canonical, alias)
         self._apply_learned_terms(terms)
         return self.vocabulary_payload()
@@ -433,7 +435,9 @@ class DesktopController:
     def forget_correction(self, alias: str, canonical: str) -> dict[str, Any]:
         with self._lock:
             if self.state in {"listening", "transcribing"}:
-                raise ValueError("Finish the current dictation before removing a correction")
+                raise ValueError(
+                    "Finish the current dictation before removing a correction"
+                )
         terms = self.vocabulary_store.remove(canonical, alias)
         self._apply_learned_terms(terms)
         return self.vocabulary_payload()
@@ -554,7 +558,9 @@ class DesktopController:
                 project_path = str(project.resolve())
                 project_terms = scan_repository(project)
             except OSError as exc:
-                raise ValueError(f"Project folder could not be scanned: {exc}") from None
+                raise ValueError(
+                    f"Project folder could not be scanned: {exc}"
+                ) from None
 
         settings = UserSettings(
             provider=provider,

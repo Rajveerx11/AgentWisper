@@ -1,0 +1,99 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  windows-release:
+    name: Windows release
+    runs-on: windows-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Install locked dependencies
+        run: uv sync --locked --extra dev
+
+      - name: Verify release version
+        shell: pwsh
+        run: |
+          $version = uv run python -c "from agent_whisper import __version__; print(__version__)"
+          $expectedTag = "v$version"
+          if ($env:GITHUB_REF_NAME -ne $expectedTag) {
+            throw "Tag $env:GITHUB_REF_NAME does not match package version $version. Expected $expectedTag."
+          }
+
+      - name: Run release checks
+        shell: pwsh
+        run: |
+          uv lock --check
+          uv run ruff check src tests
+          uv run ruff format --check src tests
+          uv run pytest -q
+          node --check src/agent_whisper/web/app.js
+          uv build
+
+      - name: Build Windows application
+        shell: pwsh
+        run: ./build.ps1
+
+      - name: Create release archive and checksum
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME.TrimStart("v")
+          $releaseDirectory = Join-Path $PWD "release"
+          New-Item -ItemType Directory -Path $releaseDirectory -Force | Out-Null
+          $archive = Join-Path $releaseDirectory "AgentWisper-$version-windows-x64.zip"
+          Compress-Archive -Path "dist/AgentWisper/*" -DestinationPath $archive -CompressionLevel Optimal
+          $checksum = Get-FileHash -LiteralPath $archive -Algorithm SHA256
+          "$($checksum.Hash.ToLowerInvariant())  $([IO.Path]::GetFileName($archive))" |
+            Set-Content -LiteralPath "$archive.sha256" -Encoding ascii
+
+      - name: Upload release package to workflow
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: agentwisper-${{ github.ref_name }}-windows
+          path: |
+            release/*.zip
+            release/*.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $archive = Get-ChildItem -LiteralPath "release" -Filter "*.zip" | Select-Object -First 1
+          $checksum = Get-Item -LiteralPath "$($archive.FullName).sha256"
+          gh release create $env:GITHUB_REF_NAME `
+            $archive.FullName `
+            $checksum.FullName `
+            --repo $env:GITHUB_REPOSITORY `
+            --verify-tag `
+            --generate-notes `
+            --title "AgentWisper $env:GITHUB_REF_NAME"

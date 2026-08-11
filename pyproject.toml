@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
@@ -8,6 +8,29 @@ version = "0.6.0"
 description = "Private, local technical dictation for coding-agent workflows"
 readme = "README.md"
 license = "MIT"
+license-files = [
+  "LICENSE",
+  "NOTICE.md",
+  "THIRD_PARTY_NOTICES.md",
+  "third_party/**/LICENSE*",
+]
+authors = [{ name = "Rajveer Vadnal" }]
+keywords = [
+  "dictation",
+  "speech-to-text",
+  "developer-tools",
+  "local-ai",
+  "windows",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Win32 (MS Windows)",
+  "Intended Audience :: Developers",
+  "Operating System :: Microsoft :: Windows",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Software Development",
+]
 requires-python = ">=3.11"
 dependencies = [
   "numpy>=2.0,<3",
@@ -28,12 +51,16 @@ dev = [
 
 [project.scripts]
 agent-whisper = "agent_whisper.app:main"
+
+[project.gui-scripts]
 agent-wisper-app = "agent_whisper.gui:main"
 
 [project.urls]
 Homepage = "https://github.com/Rajveerx11/AgentWisper"
 Repository = "https://github.com/Rajveerx11/AgentWisper"
 Issues = "https://github.com/Rajveerx11/AgentWisper/issues"
+Documentation = "https://github.com/Rajveerx11/AgentWisper#readme"
+Changelog = "https://github.com/Rajveerx11/AgentWisper/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agent_whisper"]

@@ -38,7 +38,7 @@ dependencies = [
   "pyperclip>=1.11,<2",
   "pywebview>=6.2.1,<7",
   "sherpa-onnx==1.13.4",
-  "sherpa-onnx-core==1.13.4",
+  "sherpa-onnx-core==1.13.5",
   "sounddevice>=0.5,<1",
 ]
 

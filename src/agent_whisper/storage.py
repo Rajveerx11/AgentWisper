@@ -29,7 +29,7 @@ def app_data_dir() -> Path:
 
 @dataclass(slots=True)
 class UserSettings:
-    settings_version: int = 3
+    settings_version: int = 5
     provider: str = "local"
     hotkey: str = DEFAULT_HOTKEY
     input_device: int | str | None = None
@@ -39,6 +39,8 @@ class UserSettings:
     custom_model: str = "gpt-4o-mini-transcribe"
     paste_result: bool = True
     restore_clipboard: bool = True
+    cleanup_speech: bool = True
+    start_with_windows: bool = False
     language: str = "en"
     num_threads: int = 4
     project_path: str = ""
@@ -64,8 +66,8 @@ class SettingsStore:
             and raw.get("hotkey", LEGACY_DEFAULT_HOTKEY) == LEGACY_DEFAULT_HOTKEY
         ):
             raw["hotkey"] = DEFAULT_HOTKEY
-        if settings_version < 3:
-            raw["settings_version"] = 3
+        if settings_version < 5:
+            raw["settings_version"] = 5
         defaults = asdict(UserSettings())
         values = {key: raw.get(key, default) for key, default in defaults.items()}
         return UserSettings(**values)

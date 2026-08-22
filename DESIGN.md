@@ -167,7 +167,7 @@ Palette pairs cool mineral neutrals with scarce signal colors and one compact ca
 
 ## Layout
 
-Desktop workspace opens at 1120 by 760 pixels and must remain useful at its 940 by 660 pixel minimum. A fixed 184-pixel navigation rail anchors the left edge. Pages use 34-pixel horizontal insets, 28-pixel top spacing, and a 20-pixel internal surface rhythm.
+Desktop workspace opens at 1000 by 640 pixels and must remain useful at its 860 by 580 pixel minimum. A fixed 188-pixel navigation rail compresses to 164 pixels at the minimum width. Pages use 36-pixel horizontal insets, reduced to 28 pixels in compact windows, and a 20-pixel internal surface rhythm.
 
 Home follows one vertical command sequence: page context, 172-pixel signal route, current action, then latest transcript. History and Settings retain the same page insets and surface language. Keep the first viewport focused on dictation; no analytics grid or decorative dashboard modules.
 

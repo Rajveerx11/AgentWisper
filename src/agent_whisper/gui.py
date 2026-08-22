@@ -10,7 +10,7 @@ from typing import Any
 from agent_whisper import __version__
 from agent_whisper.desktop import DesktopController
 from agent_whisper.overlay import OverlayProcess
-from agent_whisper.windows_runtime import SingleInstance
+from agent_whisper.windows_runtime import SingleInstance, set_start_with_windows
 
 logger = logging.getLogger(__name__)
 DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = ctypes.c_void_p(-4)
@@ -42,6 +42,7 @@ class DesktopApi:
         self._controller = controller
         self._window: Any | None = None
         self._overlay: OverlayProcess | None = None
+        self._quitting = False
 
     def attach(self, window: Any, overlay: OverlayProcess) -> None:
         self._window = window
@@ -63,7 +64,9 @@ class DesktopApi:
         return self._controller.toggle_recording()
 
     def save_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
-        return self._controller.save_settings(payload)
+        settings = self._controller.save_settings(payload)
+        set_start_with_windows(bool(settings["start_with_windows"]))
+        return settings
 
     def clear_history(self) -> bool:
         self._controller.clear_history()
@@ -105,8 +108,19 @@ class DesktopApi:
         if self._window:
             self._window.hide()
         if self._overlay:
+            self._overlay.reposition()
             self._overlay.notice("Hold the hotkey whenever you want to dictate")
         return True
+
+    def quit_app(self) -> bool:
+        self._quitting = True
+        if self._window:
+            self._window.destroy()
+        return True
+
+    @property
+    def is_quitting(self) -> bool:
+        return self._quitting
 
 
 def _set_windows_app_id() -> None:
@@ -144,6 +158,10 @@ def main() -> None:
 
     controller = DesktopController()
     controller.start()
+    try:
+        set_start_with_windows(controller.settings.start_with_windows)
+    except OSError:
+        logger.exception("Could not update the Start with Windows registration")
     api = DesktopApi(controller)
     interface = _load_interface()
     window = webview.create_window(
@@ -176,11 +194,14 @@ def main() -> None:
     api.attach(window, overlay)
 
     def background_window() -> bool:
+        if api.is_quitting:
+            return True
         try:
             controller.end_hotkey_capture()
         except Exception:
             logger.exception("Could not restore the hotkey listener before hiding")
         window.hide()
+        overlay.reposition()
         overlay.notice("Hold the hotkey whenever you want to dictate")
         return False
 

@@ -33,10 +33,13 @@ Repository content is never executed, edited, or inserted into cloud prompts.
 
 - Native Windows desktop lifecycle with Start Menu and Installed Apps entries
 - Right Ctrl push-to-talk by default; any single key can be captured in Settings
-- Persistent, always-on-top Signal Node for recording and processing state
+- Persistent HTML-based Signal Node with real microphone-level animation
+- Close-to-background lifecycle with single-instance reopening
+- Optional Start with Windows registration and an explicit in-app Quit action
 - Local Parakeet TDT 0.6B v3 inference with background model preloading
 - Groq and custom OpenAI-compatible transcription providers
 - Project-aware and user-taught developer vocabulary
+- Optional local removal of obvious speech fillers with raw-text recovery
 - Local SQLite transcript history
 - Automatic cursor paste with clipboard restoration
 - Windows DPAPI encryption for cloud API keys
@@ -127,8 +130,16 @@ Uninstalling keeps settings, vocabulary, and transcript history. Remove
 5. Hold the hotkey, speak, and release it to transcribe.
 6. Use **Teach correction** in History when a technical term is wrong.
 
-Closing the main window hides it. The global hotkey and Signal Node continue
-running until `AgentWisper.exe` is ended or the app is uninstalled.
+## Background operation
+
+Closing the main window hides it; it does not stop AgentWisper. The global
+hotkey and Signal Node continue running. Right-click the Signal Node or launch
+AgentWisper again to reopen the same process.
+
+In **Settings > Background behavior**, enable **Start AgentWisper when I sign
+in** for the current Windows user, hide the main window directly, or use the
+two-step **Quit AgentWisper** action to stop the hotkey, Signal Node, and app.
+Uninstalling also removes the Start with Windows registration.
 
 ## Providers and privacy
 
@@ -191,6 +202,8 @@ src/agent_whisper/gui.py          WebView2 host and desktop lifecycle
 src/agent_whisper/desktop.py      Recording and transcription controller
 src/agent_whisper/overlay.py      Always-on-top Signal Node
 src/agent_whisper/web/            Local HTML, CSS, and JavaScript interface
+src/agent_whisper/overlay_web/    Local Signal Node interface
+src/agent_whisper/windows_runtime.py  Single-instance and login-start behavior
 src/agent_whisper/providers.py    Local and cloud transcription providers
 src/agent_whisper/storage.py      Settings, encrypted secrets, and history
 src/agent_whisper/vocabulary.py   Project and learned correction engine

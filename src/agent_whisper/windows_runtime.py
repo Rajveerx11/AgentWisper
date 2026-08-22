@@ -2,12 +2,51 @@ from __future__ import annotations
 
 import ctypes
 import os
+import subprocess
+import sys
+import winreg
 from ctypes import wintypes
+from pathlib import Path
 from typing import Self
 
 ERROR_ALREADY_EXISTS = 183
 WAIT_OBJECT_0 = 0
 WAIT_TIMEOUT = 258
+STARTUP_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+STARTUP_VALUE = "AgentWisper"
+
+
+def startup_command() -> str:
+    """Return the per-user login command for the current build."""
+    if getattr(sys, "frozen", False):
+        return subprocess.list2cmdline([sys.executable])
+    python = str(Path(sys.executable).with_name("pythonw.exe"))
+    if not Path(python).is_file():
+        python = sys.executable
+    return subprocess.list2cmdline([python, "-m", "agent_whisper.gui"])
+
+
+def set_start_with_windows(enabled: bool) -> None:
+    """Create or remove AgentWisper's current-user login registration."""
+    with winreg.CreateKeyEx(
+        winreg.HKEY_CURRENT_USER,
+        STARTUP_KEY,
+        0,
+        winreg.KEY_SET_VALUE,
+    ) as key:
+        if enabled:
+            winreg.SetValueEx(
+                key,
+                STARTUP_VALUE,
+                0,
+                winreg.REG_SZ,
+                startup_command(),
+            )
+            return
+        try:
+            winreg.DeleteValue(key, STARTUP_VALUE)
+        except FileNotFoundError:
+            pass
 
 
 class SingleInstance:

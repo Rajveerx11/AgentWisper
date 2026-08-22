@@ -5,6 +5,7 @@ import pytest
 
 from agent_whisper.desktop import DesktopController
 from agent_whisper.gui import DesktopApi, _load_interface
+from agent_whisper.overlay import _load_overlay_interface, _overlay_dimensions
 from agent_whisper.storage import SettingsStore, UserSettings
 
 
@@ -24,7 +25,78 @@ def test_local_interface_assets_are_inlined() -> None:
     assert 'id="hotkey-recorder"' in interface
     assert 'id="project-path"' in interface
     assert 'id="teach-dialog"' in interface
+    assert 'id="start-with-windows"' in interface
+    assert 'id="hide-to-background"' in interface
+    assert 'id="quit-app"' in interface
     assert "Teach correction" in interface
+
+
+def test_overlay_interface_assets_are_inlined() -> None:
+    interface = _load_overlay_interface()
+    assert "AGENTWISPER_OVERLAY_STYLES" not in interface
+    assert "AGENTWISPER_OVERLAY_SCRIPT" not in interface
+    assert 'id="level-bars"' in interface
+    assert "get_snapshot" in interface
+    assert "background: transparent" not in interface
+
+
+def test_overlay_window_matches_each_visible_state() -> None:
+    assert _overlay_dimensions("idle") == (264, 60)
+    assert _overlay_dimensions("listening") == (352, 74)
+    assert _overlay_dimensions("success") == (304, 64)
+
+
+def test_desktop_bridge_applies_startup_preference(monkeypatch) -> None:
+    class FakeController:
+        def save_settings(self, payload):
+            return {"start_with_windows": bool(payload["start_with_windows"])}
+
+    applied = []
+    monkeypatch.setattr(
+        "agent_whisper.gui.set_start_with_windows",
+        lambda enabled: applied.append(enabled),
+    )
+    api = DesktopApi(cast(DesktopController, FakeController()))
+
+    assert api.save_settings({"start_with_windows": True}) == {
+        "start_with_windows": True
+    }
+    assert applied == [True]
+
+
+def test_desktop_bridge_hides_repositions_and_quits() -> None:
+    class FakeWindow:
+        hidden = False
+        destroyed = False
+
+        def hide(self):
+            self.hidden = True
+
+        def destroy(self):
+            self.destroyed = True
+
+    class FakeOverlay:
+        repositioned = False
+        message = ""
+
+        def reposition(self):
+            self.repositioned = True
+
+        def notice(self, message):
+            self.message = message
+
+    api = DesktopApi(cast(DesktopController, object()))
+    window = FakeWindow()
+    overlay = FakeOverlay()
+    api.attach(window, overlay)  # type: ignore[arg-type]
+
+    assert api.hide_window()
+    assert window.hidden
+    assert overlay.repositioned
+    assert "hotkey" in overlay.message
+    assert api.quit_app()
+    assert api.is_quitting
+    assert window.destroyed
 
 
 def test_project_folder_dialog_returns_first_selected_path() -> None:

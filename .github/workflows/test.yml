@@ -51,7 +51,9 @@ jobs:
         run: uv run pytest -q
 
       - name: Check JavaScript syntax
-        run: node --check src/agent_whisper/web/app.js
+        run: |
+          node --check src/agent_whisper/web/app.js
+          node --check src/agent_whisper/overlay_web/app.js
 
       - name: Build Python distributions
         run: uv build

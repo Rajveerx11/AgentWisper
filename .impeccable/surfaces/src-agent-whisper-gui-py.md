@@ -22,12 +22,12 @@ related_targets: ["src/agent_whisper/hotkeys.py"]
 
 | Ingredient | Medium | Decision |
 | --- | --- | --- |
-| Main navigation and title rail | Native Tkinter frames/buttons | Produce |
-| Signal route stage | Tkinter Canvas | Produce |
-| Latest transcript and history | Native Text/Frame widgets | Produce |
-| Persistent Signal Node | Transparent topmost Toplevel + Canvas | Produce |
-| Icons and signal glyphs | Code-drawn Canvas geometry | Produce |
-| State motion | Bounded Canvas animation timers | Produce |
+| Main navigation and title rail | Local HTML/CSS in WebView2 | Produce |
+| Signal route stage | HTML Canvas | Produce |
+| Latest transcript and history | Semantic local HTML | Produce |
+| Persistent Signal Node | Frameless topmost WebView2 child process | Produce |
+| Icons and signal glyphs | Inline SVG, Canvas, and CSS geometry | Produce |
+| State motion | Bounded requestAnimationFrame and CSS motion | Produce |
 | Raster imagery | None | Intentionally omitted |
 
 ## Direction contract

@@ -1,0 +1,100 @@
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  --accent: #6f96ff;
+  --success: #32b98f;
+  --danger: #e06178;
+  --carbon: #111820;
+  --carbon-hover: #18222d;
+  --edge: #344252;
+  --copy: #f7fafc;
+  --muted: #aab7c5;
+}
+
+* { box-sizing: border-box; }
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--carbon);
+}
+
+body {
+  display: block;
+}
+
+.signal-node {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 8px 14px 10px 12px;
+  overflow: hidden;
+  border: 1px solid var(--edge);
+  border-radius: 18px;
+  background: var(--carbon);
+  color: var(--copy);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 130ms ease, background 130ms ease;
+}
+
+.signal-node:hover { background: var(--carbon-hover); }
+.signal-node:focus { outline: none; }
+.signal-node.state-listening { grid-template-columns: 40px 100px minmax(90px, 1fr) 40px; border-color: var(--accent); }
+.signal-node.state-transcribing,
+.signal-node.state-success,
+.signal-node.state-error,
+.signal-node.state-notice { grid-template-columns: 40px minmax(0, 1fr); }
+.signal-node.state-success,
+.signal-node.state-notice { border-color: var(--success); }
+.signal-node.state-error { border-color: var(--danger); }
+
+.state-icon { position: relative; display: grid; width: 36px; height: 36px; place-items: center; }
+.state-icon > span { position: absolute; opacity: 0; transition: opacity 100ms ease; }
+.ready-ring { width: 31px; height: 31px; border: 2px solid var(--success); border-radius: 50%; }
+.ready-ring::after { position: absolute; top: 10px; left: 10px; width: 7px; height: 7px; border-radius: 50%; background: var(--copy); content: ""; }
+.state-idle .ready-ring { opacity: 1; }
+
+.mic { width: 30px; height: 30px; border: 2px solid var(--accent); border-radius: 50%; }
+.mic::before { position: absolute; inset: -7px; border: 1px solid rgb(111 150 255 / 42%); border-radius: 50%; content: ""; transform: scale(var(--pulse, 1)); }
+.mic i { position: absolute; top: 8px; left: 10px; width: 7px; height: 11px; border-radius: 5px; background: white; }
+.state-listening .mic { opacity: 1; }
+
+.spinner { width: 34px; height: 34px; animation: orbit 900ms linear infinite; }
+.spinner i { position: absolute; top: 15px; left: 15px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); transform: rotate(calc(var(--index) * 120deg)) translateY(-13px); }
+.spinner i:nth-child(1) { --index: 0; }
+.spinner i:nth-child(2) { --index: 1; background: white; }
+.spinner i:nth-child(3) { --index: 2; background: var(--success); }
+.state-transcribing .spinner { opacity: 1; }
+
+.result-icon { width: 30px; height: 30px; border-radius: 50%; background: var(--success); }
+.result-icon::after { position: absolute; top: 7px; left: 9px; width: 9px; height: 5px; border-bottom: 3px solid white; border-left: 3px solid white; content: ""; transform: rotate(-45deg); }
+.state-success .result-icon,
+.state-notice .result-icon { opacity: 1; }
+.state-error .result-icon { opacity: 1; background: var(--danger); }
+.state-error .result-icon::after { top: 4px; left: 11px; width: auto; height: auto; border: 0; color: white; content: "!"; font-size: 17px; font-weight: 800; transform: none; }
+
+.signal-copy { display: grid; min-width: 0; gap: 4px; }
+.signal-copy strong { overflow: hidden; color: var(--copy); font-size: 13px; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
+.signal-copy small { overflow: hidden; color: var(--muted); font-size: 11px; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
+
+.level-bars { display: none; height: 42px; align-items: center; gap: 3px; }
+.state-listening .level-bars { display: flex; }
+.level-bars i { width: 3px; height: 30px; border-radius: 4px; background: var(--accent); transform: scaleY(var(--level, .12)); transform-origin: center; }
+.level-bars i:nth-last-child(-n+4) { background: var(--success); }
+
+.release-key { display: none; place-items: center; width: 40px; height: 32px; border: 1px solid #43566a; border-radius: 10px; background: #253344; color: white; font-family: "Cascadia Mono", Consolas, monospace; font-size: 7px; font-weight: 800; }
+.state-listening .release-key { display: grid; }
+
+@keyframes orbit { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

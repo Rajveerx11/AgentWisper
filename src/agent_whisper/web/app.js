@@ -32,10 +32,12 @@
     hotkeyCapturing: false,
     hotkeyCaptureTimer: null,
     clearArmed: false,
+    quitArmed: false,
     toastTimer: null,
     phase: 0,
     visualLevel: 0,
     peakLevel: 0,
+    visualLevels: Array(18).fill(0),
     reduceMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   };
 
@@ -192,6 +194,8 @@
     $("#language").value = settings.language || "en";
     $("#paste-result").checked = Boolean(settings.paste_result);
     $("#restore-clipboard").checked = Boolean(settings.restore_clipboard);
+    $("#cleanup-speech").checked = settings.cleanup_speech !== false;
+    $("#start-with-windows").checked = Boolean(settings.start_with_windows);
     $("#project-path").value = settings.project_path || "";
     $("#groq-key-status").textContent = settings.groq_key_saved
       ? "API key saved · encrypted with Windows DPAPI."
@@ -255,6 +259,8 @@
       language: $("#language").value,
       paste_result: $("#paste-result").checked,
       restore_clipboard: $("#restore-clipboard").checked,
+      cleanup_speech: $("#cleanup-speech").checked,
+      start_with_windows: $("#start-with-windows").checked,
       project_path: $("#project-path").value,
     };
   }
@@ -570,30 +576,23 @@
     context.stroke();
 
     if (state === "listening") {
-      const colors = ["#7da2ff", "#2f67e8", "#4cae91"];
-      [-8, 0, 8].forEach((lane, laneIndex) => {
-        context.strokeStyle = colors[laneIndex];
-        context.lineWidth = laneIndex === 1 ? 2.7 : 1.8;
+      const incoming = Array.isArray(ui.runtime.levels) ? ui.runtime.levels : [];
+      ui.visualLevels = ui.visualLevels.map((value, index) => {
+        const target = Number(incoming[index] ?? targetLevel);
+        return value + (target - value) * (target > value ? 0.42 : 0.2);
+      });
+      const barWidth = Math.max(3, (end - start) / (ui.visualLevels.length * 1.8));
+      const gap = ((end - start) - barWidth * ui.visualLevels.length) / (ui.visualLevels.length - 1);
+      ui.visualLevels.forEach((value, index) => {
+        const centerX = start + index * (barWidth + gap) + barWidth / 2;
+        const heightValue = 5 + value * 34;
+        context.strokeStyle = index > ui.visualLevels.length * 0.72 ? "#087456" : "#2f67e8";
+        context.lineWidth = barWidth;
+        context.lineCap = "round";
         context.beginPath();
-        const steps = Math.max(70, Math.round((end - start) / 7));
-        for (let index = 0; index <= steps; index += 1) {
-          const progress = index / steps;
-          const x = start + (end - start) * progress;
-          const envelope = Math.pow(Math.sin(Math.PI * progress), 0.72);
-          const amplitude = 2.2 + ui.visualLevel * (9 + laneIndex * 2);
-          const primary = Math.sin(ui.phase * (2.6 + laneIndex * 0.2) + index * 0.63);
-          const harmonic = Math.sin(ui.phase * 1.4 + index * 1.13 + laneIndex) * 0.28;
-          const wave = (primary + harmonic) * amplitude * envelope;
-          const pointY = y + lane * 0.42 + wave;
-          if (index === 0) context.moveTo(x, pointY);
-          else context.lineTo(x, pointY);
-        }
+        context.moveTo(centerX, y - heightValue / 2);
+        context.lineTo(centerX, y + heightValue / 2);
         context.stroke();
-        const travel = (ui.phase * (0.17 + laneIndex * 0.01) + laneIndex * 0.27) % 1;
-        context.fillStyle = colors[laneIndex];
-        context.beginPath();
-        context.arc(start + (end - start) * travel, y + lane * 0.42, 2.2 + ui.peakLevel, 0, Math.PI * 2);
-        context.fill();
       });
     } else if (state === "transcribing") {
       context.strokeStyle = "#087456";
@@ -642,7 +641,7 @@
       renderRuntime(bootstrap.runtime);
       populateSettings(bootstrap);
       renderHistory(bootstrap.history);
-      setInterval(pollRuntime, 90);
+      setInterval(pollRuntime, 60);
     } catch (error) {
       runtimeTitle.textContent = "AgentWisper could not start";
       runtimeDetail.textContent = error.message || String(error);
@@ -765,6 +764,29 @@
     renderRuntime(await window.pywebview.api.get_runtime());
     await refreshHistory();
     showToast("History cleared");
+  });
+
+  $("#hide-to-background").addEventListener("click", async () => {
+    await finishHotkeyCapture();
+    await window.pywebview.api.hide_window();
+  });
+
+  $("#quit-app").addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    if (!ui.quitArmed) {
+      ui.quitArmed = true;
+      button.textContent = "Confirm quit";
+      button.classList.add("is-confirming");
+      setTimeout(() => {
+        ui.quitArmed = false;
+        button.textContent = "Quit AgentWisper";
+        button.classList.remove("is-confirming");
+      }, 3500);
+      return;
+    }
+    button.disabled = true;
+    button.textContent = "Quitting…";
+    await window.pywebview.api.quit_app();
   });
 
   $("#settings-form").addEventListener("submit", async (event) => {

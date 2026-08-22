@@ -1,13 +1,41 @@
 from __future__ import annotations
 
 import threading
+import time
 import wave
+from collections import deque
 from pathlib import Path
 
 import numpy as np
 import sounddevice as sd
 
 SAMPLE_RATE = 16_000
+
+
+def trim_silence(
+    samples: np.ndarray,
+    sample_rate: int = SAMPLE_RATE,
+    *,
+    threshold: float = 0.0015,
+    padding_seconds: float = 0.24,
+) -> np.ndarray:
+    """Trim clear digital silence while retaining context around speech."""
+    audio = np.asarray(samples, dtype=np.float32).reshape(-1)
+    if audio.size < max(1, int(sample_rate * 0.8)):
+        return audio
+    frame_size = max(1, int(sample_rate * 0.02))
+    usable_size = audio.size - (audio.size % frame_size)
+    if usable_size < frame_size:
+        return audio
+    frames = audio[:usable_size].reshape(-1, frame_size)
+    levels = np.sqrt(np.mean(np.square(frames), axis=1))
+    active = np.flatnonzero(levels >= threshold)
+    if active.size == 0:
+        return audio
+    padding = max(frame_size, int(sample_rate * padding_seconds))
+    start = max(0, int(active[0]) * frame_size - padding)
+    end = min(audio.size, (int(active[-1]) + 1) * frame_size + padding)
+    return audio[start:end]
 
 
 class AudioRecorder:
@@ -23,6 +51,8 @@ class AudioRecorder:
         self._stream: sd.InputStream | None = None
         self._recorded_samples = 0
         self._level = 0.0
+        self._levels: deque[float] = deque([0.0] * 18, maxlen=18)
+        self._peak = 0.0
 
     @property
     def recording(self) -> bool:
@@ -32,6 +62,16 @@ class AudioRecorder:
     def level(self) -> float:
         with self._lock:
             return self._level
+
+    @property
+    def levels(self) -> list[float]:
+        with self._lock:
+            return list(self._levels)
+
+    @property
+    def peak(self) -> float:
+        with self._lock:
+            return self._peak
 
     def _callback(
         self,
@@ -50,7 +90,12 @@ class AudioRecorder:
                 self._chunks.append(chunk)
                 self._recorded_samples += chunk.shape[0]
                 rms = float(np.sqrt(np.mean(np.square(chunk)))) if chunk.size else 0.0
-                self._level = min(1.0, rms * 10.0)
+                peak = float(np.max(np.abs(chunk))) if chunk.size else 0.0
+                decibels = 20.0 * np.log10(max(rms, 1e-5))
+                level = min(1.0, max(0.0, float((decibels + 55.0) / 45.0)))
+                self._level = level
+                self._levels.append(level)
+                self._peak = max(self._peak, peak)
 
     def start(self) -> None:
         if self.recording:
@@ -59,6 +104,8 @@ class AudioRecorder:
             self._chunks.clear()
             self._recorded_samples = 0
             self._level = 0.0
+            self._levels = deque([0.0] * 18, maxlen=18)
+            self._peak = 0.0
         self._stream = sd.InputStream(
             samplerate=SAMPLE_RATE,
             channels=1,
@@ -68,7 +115,9 @@ class AudioRecorder:
         )
         self._stream.start()
 
-    def stop(self) -> np.ndarray:
+    def stop(self, tail_seconds: float = 0.0) -> np.ndarray:
+        if tail_seconds > 0 and self.recording:
+            time.sleep(min(0.25, tail_seconds))
         stream = self._stream
         self._stream = None
         if stream is not None:

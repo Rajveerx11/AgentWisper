@@ -19,7 +19,8 @@ def test_settings_round_trip(tmp_path: Path) -> None:
     loaded = store.load()
     assert loaded.provider == "groq"
     assert loaded.hotkey == "<ctrl>+<shift>+<space>"
-    assert loaded.settings_version == 3
+    assert loaded.settings_version == 5
+    assert loaded.start_with_windows is False
 
 
 def test_legacy_default_hotkey_migrates_to_right_ctrl(tmp_path: Path) -> None:

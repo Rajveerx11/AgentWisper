@@ -16,14 +16,9 @@
         <div class="brand-lockup">
           <div class="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 32 32" role="img">
-              <circle cx="16" cy="16" r="15" fill="currentColor" />
-              <path d="M7 17l5-7 5 12 8-9" fill="none" stroke="white" stroke-width="2" />
-              <g fill="#7da2ff">
-                <circle cx="7" cy="17" r="2" />
-                <circle cx="12" cy="10" r="2" />
-                <circle cx="17" cy="22" r="2" />
-                <circle cx="25" cy="13" r="2" />
-              </g>
+              <rect x="1" y="1" width="30" height="30" rx="8" fill="currentColor" />
+              <path d="M6 16h3l2.3-6 3.4 12 3.1-9 2.2 6h2.5" fill="none" stroke="white" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M22.5 12.5l4.2 3.5-4.2 3.5z" fill="#7da2ff" />
             </svg>
           </div>
           <div>
@@ -245,6 +240,28 @@
                     <input id="restore-clipboard" type="checkbox" />
                     <span><b>Restore previous clipboard text</b><small>Keeps your clipboard unchanged after automatic paste.</small></span>
                   </label>
+                  <label class="check-row">
+                    <input id="cleanup-speech" type="checkbox" />
+                    <span><b>Remove obvious speech fillers</b><small>Removes “um”, “uh”, and boundary phrases such as “you know”. Raw text remains in History.</small></span>
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <section class="settings-section" aria-labelledby="background-title">
+              <div class="section-heading">
+                <h2 id="background-title">Background behavior</h2>
+                <p>Keep dictation available without leaving the main window open.</p>
+              </div>
+              <div class="section-content background-controls">
+                <label class="check-row">
+                  <input id="start-with-windows" type="checkbox" />
+                  <span><b>Start AgentWisper when I sign in</b><small>Registers AgentWisper for this Windows user only.</small></span>
+                </label>
+                <p class="field-note">Closing or hiding this window leaves the global hotkey and Signal Node running.</p>
+                <div class="background-actions">
+                  <button class="button button-secondary" id="hide-to-background" type="button">Hide to background</button>
+                  <button class="button button-danger" id="quit-app" type="button">Quit AgentWisper</button>
                 </div>
               </div>
             </section>

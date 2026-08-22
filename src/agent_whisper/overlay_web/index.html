@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline';" />
+    <title>AgentWisper Signal</title>
+    <!-- AGENTWISPER_OVERLAY_STYLES -->
+  </head>
+  <body>
+    <button class="signal-node state-idle" id="signal-node" type="button" aria-label="Start dictation">
+      <span class="state-icon" aria-hidden="true">
+        <span class="ready-ring"></span>
+        <span class="mic"><i></i></span>
+        <span class="spinner"><i></i><i></i><i></i></span>
+        <span class="result-icon"></span>
+      </span>
+      <span class="signal-copy">
+        <strong id="title">Ready</strong>
+        <small id="detail">Hold Right Ctrl</small>
+      </span>
+      <span class="level-bars" id="level-bars" aria-hidden="true"></span>
+      <span class="release-key" id="release-key">LET GO</span>
+    </button>
+    <!-- AGENTWISPER_OVERLAY_SCRIPT -->
+  </body>
+</html>

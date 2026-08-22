@@ -12,7 +12,7 @@ from typing import Any
 import pyperclip
 
 from agent_whisper.app import _paste_text
-from agent_whisper.audio import AudioRecorder, list_input_devices
+from agent_whisper.audio import AudioRecorder, list_input_devices, trim_silence
 from agent_whisper.config import MODEL_FILES, discover_model_dir
 from agent_whisper.hotkeys import (
     HOTKEY_CHOICES,
@@ -27,6 +27,7 @@ from agent_whisper.providers import (
     ProviderRequest,
     validate_base_url,
 )
+from agent_whisper.speech_cleanup import clean_spoken_text
 from agent_whisper.storage import (
     HistoryStore,
     SecretStore,
@@ -41,6 +42,7 @@ from agent_whisper.vocabulary import (
 )
 
 MAX_RECORDING_SECONDS = 120
+RELEASE_TAIL_SECONDS = 0.12
 logger = logging.getLogger(__name__)
 
 
@@ -222,8 +224,33 @@ class DesktopController:
             if self._shutdown or self.state != "listening":
                 return False
             self._cancel_timer("_recording_timer")
-            samples = self.recorder.stop()
             self._recording_started_at = 0.0
+            settings = replace(self.settings)
+            detail = (
+                "Two-minute limit reached. Transcribing captured audio."
+                if reached_limit
+                else "Finalizing the last words…"
+            )
+            self._set_state("transcribing", detail)
+            threading.Thread(
+                target=self._finish_recording,
+                args=(settings, reached_limit),
+                daemon=True,
+                name="AgentWisperAudioHandoff",
+            ).start()
+            return True
+
+    def _finish_recording(
+        self,
+        settings: UserSettings,
+        reached_limit: bool,
+    ) -> None:
+        samples = self.recorder.stop(
+            tail_seconds=0.0 if reached_limit else RELEASE_TAIL_SECONDS
+        )
+        with self._lock:
+            if self._shutdown:
+                return
             if samples.size < 1_600:
                 self._paste_target_hwnd = None
                 self._set_state(
@@ -231,21 +258,9 @@ class DesktopController:
                     "Recording was too short. Hold the hotkey a little longer.",
                 )
                 self._settle_after(3.0, "error")
-                return False
-            settings = replace(self.settings)
-            detail = (
-                "Two-minute limit reached. Transcribing captured audio."
-                if reached_limit
-                else ""
-            )
-            self._set_state("transcribing", detail)
-            threading.Thread(
-                target=self._transcribe,
-                args=(samples, settings),
-                daemon=True,
-                name="AgentWisperTranscription",
-            ).start()
-            return True
+                return
+            self._set_state("transcribing")
+        self._transcribe(samples, settings)
 
     def toggle_recording(self) -> bool:
         if self.runtime()["state"] == "listening":
@@ -258,6 +273,7 @@ class DesktopController:
 
     def _transcribe(self, samples: Any, settings: UserSettings) -> None:
         try:
+            samples = trim_silence(samples, 16_000)
             if settings.provider == "local":
                 transcription = self.local_pool.transcribe(
                     samples,
@@ -288,17 +304,15 @@ class DesktopController:
                     ),
                 )
 
-            correction = self.corrections.correct(transcription.text)
+            cleaned = (
+                clean_spoken_text(transcription.text)
+                if settings.cleanup_speech
+                else None
+            )
+            source_text = cleaned.text if cleaned is not None else transcription.text
+            correction = self.corrections.correct(source_text)
             if not correction.text:
                 raise RuntimeError("No speech recognized")
-            self.history_store.add(
-                correction.text,
-                transcription.text,
-                settings.provider,
-                model,
-                transcription.audio_seconds,
-                transcription.elapsed_seconds,
-            )
 
             pasted = False
             paste_failed = ""
@@ -308,6 +322,15 @@ class DesktopController:
                     pasted = True
                 except Exception as exc:  # noqa: BLE001 - transcript remains recoverable
                     paste_failed = str(exc)
+
+            self.history_store.add(
+                correction.text,
+                transcription.text,
+                settings.provider,
+                model,
+                transcription.audio_seconds,
+                transcription.elapsed_seconds,
+            )
 
             with self._lock:
                 self.latest_text = correction.text
@@ -371,6 +394,7 @@ class DesktopController:
                 "latest_text": self.latest_text,
                 "word_count": len(self.latest_text.split()) if self.latest_text else 0,
                 "level": self.recorder.level if self.state == "listening" else 0.0,
+                "levels": self.recorder.levels if self.state == "listening" else [],
                 "recording_seconds": recording_seconds,
                 "recording_limit_seconds": MAX_RECORDING_SECONDS,
                 "hotkey": self.settings.hotkey,
@@ -572,6 +596,8 @@ class DesktopController:
             custom_model=custom_model,
             paste_result=bool(payload.get("paste_result", True)),
             restore_clipboard=bool(payload.get("restore_clipboard", True)),
+            cleanup_speech=bool(payload.get("cleanup_speech", True)),
+            start_with_windows=bool(payload.get("start_with_windows", False)),
             language=language,
             num_threads=self.settings.num_threads,
             project_path=project_path,

@@ -6,6 +6,7 @@ from PyInstaller.utils.hooks import collect_all
 
 datas, binaries, hiddenimports = collect_all("sherpa_onnx")
 datas += [(str(Path("src/agent_whisper/web")), "agent_whisper/web")]
+datas += [(str(Path("src/agent_whisper/overlay_web")), "agent_whisper/overlay_web")]
 
 runtime_distributions = (
     "numpy",

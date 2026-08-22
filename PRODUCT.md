@@ -29,12 +29,14 @@ Local-first developer dictation with an opinionated technical vocabulary and exp
 
 ## Capabilities and Constraints
 
-- Windows desktop application using local HTML/CSS in WebView2, plus a tiny native Signal Node; no Electron runtime or background web server.
+- Windows desktop application using local HTML/CSS in WebView2 for both the main window and Signal Node; no Electron runtime or background web server.
 - Closing the management window hides it while dictation keeps running; a second launch reopens the existing instance.
+- Optional per-user Start with Windows behavior; explicit Quit stops the background process and Signal Node.
 - Local Parakeet v3, Groq, and custom OpenAI-compatible transcription providers.
 - Local SQLite transcript history using WAL durability; audio is discarded after transcription.
 - Optional bounded local project scan supplies exact dependency and identifier spellings.
 - Explicit corrections taught from history are stored locally and remain individually removable.
+- Optional conservative filler cleanup keeps the raw transcript for recovery.
 - API keys are protected with Windows DPAPI.
 - Must stay lightweight and avoid speculative features.
 - The floating voice surface may learn from ambient dictation products but must not copy Wispr Flow's centered bar.

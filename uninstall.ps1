@@ -9,6 +9,7 @@ $programsRoot = [System.IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA 'Prog
 $installDirectory = [System.IO.Path]::GetFullPath((Join-Path $programsRoot $appName))
 $startMenuShortcut = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\AgentWisper.lnk'
 $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\AgentWisper'
+$startupKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
 
 $programsPrefix = $programsRoot.TrimEnd('\') + '\'
 if (-not $installDirectory.StartsWith($programsPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -27,6 +28,7 @@ foreach ($process in $runningProcesses) {
 
 Remove-Item -LiteralPath $startMenuShortcut -Force -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $uninstallKey -Recurse -Force -ErrorAction SilentlyContinue
+Remove-ItemProperty -LiteralPath $startupKey -Name $appName -Force -ErrorAction SilentlyContinue
 
 $escapedInstallDirectory = $installDirectory.Replace("'", "''")
 $cleanupCommand = "Start-Sleep -Milliseconds 500; Remove-Item -LiteralPath '$escapedInstallDirectory' -Recurse -Force"

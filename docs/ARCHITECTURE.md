@@ -2,8 +2,8 @@
 
 ## System overview
 
-AgentWisper is a Windows desktop process with a local WebView2 management UI,
-a native always-on-top Signal Node, a global push-to-talk listener, and one
+AgentWisper is a Windows desktop process with local WebView2 management and
+Signal Node UIs, a global push-to-talk listener, and one
 selected transcription provider. No local HTTP server or Electron runtime is
 used.
 
@@ -13,10 +13,12 @@ flowchart TB
     SN["Signal Node"] --> DC
     WV["WebView2 UI"] --> API["Explicit DesktopApi bridge"] --> DC
     DC --> AR["AudioRecorder"]
-    AR --> LP["LocalTranscriberPool"]
-    AR --> CP["CloudTranscriber"]
-    LP --> CE["CorrectionEngine"]
-    CP --> CE
+    AR --> ST["Safe silence trim"]
+    ST --> LP["LocalTranscriberPool"]
+    ST --> CP["CloudTranscriber"]
+    LP --> SC["Speech cleanup"]
+    CP --> SC
+    SC --> CE["CorrectionEngine"]
     VS["VocabularyStore"] --> CE
     RS["Bounded repository scan"] --> CE
     CE --> HS["SQLite HistoryStore"]
@@ -29,27 +31,49 @@ flowchart TB
 | --- | --- |
 | `gui.py` | Single-instance Windows lifecycle, WebView2 host, explicit bridge methods |
 | `desktop.py` | Thread-safe recording, provider, correction, history, and paste orchestration |
-| `overlay.py` | Persistent Signal Node and desktop recording feedback |
-| `audio.py` | Microphone stream and in-memory sample collection |
+| `overlay.py` | Persistent HTML Signal Node host and desktop bridge |
+| `audio.py` | Microphone stream, real-time levels, and safe silence trimming |
 | `providers.py` | Local model pooling and cloud transcription requests |
 | `vocabulary.py` | Built-in, repository, and learned technical correction rules |
 | `storage.py` | Versioned settings, DPAPI secrets, vocabulary JSON, SQLite history |
+| `windows_runtime.py` | Named single-instance objects and per-user login registration |
 | `web/` | Local HTML, CSS, and JavaScript application UI |
+| `overlay_web/` | Local HTML, CSS, and JavaScript Signal Node UI |
 
 ## Dictation lifecycle
 
 1. Hotkey press captures the current external foreground window and starts the
    microphone stream.
-2. Hotkey release stops recording and snapshots current settings.
-3. The selected local or cloud provider transcribes the in-memory audio.
-4. `CorrectionEngine` applies learned, repository, then built-in rules without
+2. Hotkey release keeps a 120 ms tail, stops recording, and snapshots settings.
+3. Clear leading and trailing silence is trimmed with 240 ms safety padding.
+4. The selected local or cloud provider transcribes the in-memory audio.
+5. Optional conservative speech cleanup removes high-confidence fillers.
+6. `CorrectionEngine` applies learned, repository, then built-in rules without
    cascading over newly inserted spellings.
-5. Corrected and raw text are stored locally in SQLite.
-6. When enabled, the previous foreground window is restored and the corrected
+7. When enabled, the previous foreground window is restored and the corrected
    text is pasted. Existing clipboard text is restored on a best-effort basis.
+8. Corrected and raw text are stored locally in SQLite.
 
 Controller states are `idle`, `listening`, `transcribing`, `success`, and
 `error`. The controller lock protects transitions and settings replacement.
+
+## Windows background lifecycle
+
+1. The primary process owns a named mutex and a named reopen event.
+2. Closing the management window cancels destruction and hides it. The
+   controller, global hotkey listener, and Signal Node process stay active.
+3. A second launch signals the reopen event and exits; the primary process
+   restores its existing window instead of starting duplicate listeners.
+4. The optional current-user `Run` registration starts that same executable at
+   Windows sign-in. Saving the setting refreshes the executable path.
+5. **Quit AgentWisper** destroys the management window, then the shutdown path
+   stops the overlay, hotkey listener, timers, recording, and named objects.
+
+The Signal Node runs in a child process so its topmost WebView stays responsive
+while transcription work runs. The child sets per-monitor DPI awareness before
+creating its window, clips the host window to the same 18-pixel radius as its
+HTML surface, and repositions against the active monitor work area when the
+main window enters the background.
 
 ## Privacy boundaries
 
@@ -102,4 +126,3 @@ publishes both to GitHub Releases.
 - Cloud use must be explicit and accurately labeled.
 - No repository execution, telemetry, account system, or background web server.
 - New persistent controls require a frequent developer-dictation use case.
-
